@@ -1,0 +1,6 @@
+{
+  "name": "CalorieSnap",
+  "description": "Quick offline calorie estimator for everyday Bangladeshi, South Asian, and global foods with instant sharing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
