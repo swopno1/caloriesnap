@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
@@ -13,18 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,8 +26,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,8 +42,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ads.AdMobBanner
+import com.example.ads.InterstitialAdManager
+import com.example.data.FoodDatabase
 import com.example.ui.components.AboutInfoDialog
 import com.example.ui.components.CalorieHeroCard
 import com.example.ui.components.CategoryFilterChipsRow
@@ -59,77 +57,66 @@ import com.example.viewmodel.CalorieCalculatorViewModel
 @Composable
 fun CalorieCalculatorScreen(
     viewModel: CalorieCalculatorViewModel,
-    modifier: Modifier = Modifier,
-    onTriggerShareWithInterstitial: ((() -> Unit) -> Unit)? = null
+    interstitialAdManager: InterstitialAdManager? = null,
+    modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showAboutDialog by remember { mutableStateOf(false) }
 
-    val onShareClicked: () -> Unit = {
-        val performShare = {
-            shareCalorieSummary(context, viewModel.generateShareSummary())
+    fun shareResult(shareText: String) {
+        val sendIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            type = "text/plain"
         }
-        if (onTriggerShareWithInterstitial != null) {
-            onTriggerShareWithInterstitial(performShare)
-        } else {
-            performShare()
-        }
-    }
-
-    if (showAboutDialog) {
-        AboutInfoDialog(
-            onDismiss = { showAboutDialog = false },
-            isBangla = uiState.isBanglaLanguage
+        val shareIntent = Intent.createChooser(
+            sendIntent,
+            if (uiState.isBanglaLanguage) "শেয়ার করুন" else "Share via"
         )
+        context.startActivity(shareIntent)
     }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.padding(end = 8.dp)
-                        ) {
+                        Text(text = "🥗 ", fontSize = 24.sp)
+                        Column {
                             Text(
-                                text = "🔥",
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                text = "CalorieSnap",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = if (uiState.isBanglaLanguage) "ক্যালোরি ক্যালকুলেটর" else "Quick Calorie Estimator",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
                         }
-                        Text(
-                            text = "CalorieSnap",
-                            fontWeight = FontWeight.ExtraBold,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
                 actions = {
-                    // Language Switcher (EN <-> BN)
-                    IconButton(
+                    // Language Switch Button
+                    TextButton(
                         onClick = { viewModel.toggleLanguage() },
-                        modifier = Modifier.testTag("language_toggle_button")
+                        modifier = Modifier.testTag("toggle_language_button")
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer
-                        ) {
-                            Text(
-                                text = if (uiState.isBanglaLanguage) "বাংলা" else "EN",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
+                        Text(
+                            text = if (uiState.isBanglaLanguage) "ENG" else "বাংলা",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
 
-                    // About & Legal Dialog
+                    // About / Info Button
                     IconButton(
                         onClick = { showAboutDialog = true },
                         modifier = Modifier.testTag("about_app_button")
@@ -137,151 +124,124 @@ fun CalorieCalculatorScreen(
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = "About CalorieSnap",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                }
             )
         },
         bottomBar = {
-            // Google AdMob Banner Placement
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(vertical = 4.dp),
-                contentAlignment = Alignment.Center
+            // Google AdMob Banner Ad at Bottom
+            Surface(
+                tonalElevation = 2.dp,
+                shadowElevation = 4.dp,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                AdMobBanner(
-                    modifier = Modifier.testTag("admob_banner_view")
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AdMobBanner()
+                }
             }
-        },
-        containerColor = MaterialTheme.colorScheme.background
+        }
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .testTag("calorie_main_scrollable_list"),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.TopCenter
         ) {
-            // Search Input
-            item {
-                FoodSearchBar(
-                    query = uiState.searchQuery,
-                    onQueryChange = { viewModel.onSearchQueryChange(it) },
-                    isBangla = uiState.isBanglaLanguage
-                )
-            }
-
-            // Category Chips Row
-            item {
-                CategoryFilterChipsRow(
-                    selectedCategory = uiState.selectedCategory,
-                    onCategorySelected = { viewModel.onCategorySelect(it) },
-                    isBangla = uiState.isBanglaLanguage
-                )
-            }
-
-            // Hero Card showing active Food & Real-time Calories
-            item {
-                CalorieHeroCard(
-                    uiState = uiState,
-                    onShareClick = onShareClicked
-                )
-            }
-
-            // Portion Adjuster (Portion Options, Stepper, Custom Grams)
-            uiState.selectedFood?.let { food ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 680.dp),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // 1. Search Bar
                 item {
-                    PortionAdjusterSection(
-                        food = food,
-                        selectedOptionIndex = uiState.selectedOptionIndex,
-                        quantityMultiplier = uiState.quantityMultiplier,
-                        isCustomMode = uiState.isCustomGramMode,
-                        customGramsInput = uiState.customGrams,
-                        isBangla = uiState.isBanglaLanguage,
-                        onOptionSelected = { viewModel.selectServingOption(it) },
-                        onMultiplierChange = { viewModel.setQuantityMultiplier(it) },
-                        onCustomModeToggle = { viewModel.setCustomGramMode(it) },
-                        onCustomGramsChange = { viewModel.updateCustomGrams(it) }
+                    FoodSearchBar(
+                        query = uiState.searchQuery,
+                        onQueryChange = { viewModel.onSearchQueryChange(it) },
+                        isBangla = uiState.isBanglaLanguage
                     )
                 }
-            }
 
-            // Food List Header
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (uiState.isBanglaLanguage) "খাবারের তালিকা (${uiState.filteredFoods.size})"
-                        else "Food Database (${uiState.filteredFoods.size})",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = if (uiState.isBanglaLanguage) "অফলাইন ডাটাবেজ" else "Offline Database",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold
+                // 2. Category Filter Chips
+                item {
+                    CategoryFilterChipsRow(
+                        selectedCategory = uiState.selectedCategory,
+                        onCategorySelected = { viewModel.onCategorySelect(it) },
+                        isBangla = uiState.isBanglaLanguage
                     )
                 }
-            }
 
-            // Filtered Food List Items
-            if (uiState.filteredFoods.isEmpty()) {
+                // 3. Main Calorie Hero Result Display Card
                 item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Restaurant,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = if (uiState.isBanglaLanguage) "কোনো খাবার পাওয়া যায়নি"
-                                else "No food matched your search",
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = if (uiState.isBanglaLanguage) "অন্য কোনো নাম বা ক্যাটাগরি বেছে নিন"
-                                else "Try searching with a different keyword or category",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    CalorieHeroCard(
+                        uiState = uiState,
+                        onShareClick = {
+                            val textToShare = viewModel.generateShareSummary()
+                            if (context is Activity && interstitialAdManager != null) {
+                                interstitialAdManager.showAd(context) {
+                                    shareResult(textToShare)
+                                }
+                            } else {
+                                shareResult(textToShare)
+                            }
                         }
+                    )
+                }
+
+                // 4. Portion / Serving Adjuster Section
+                val currentFood = uiState.selectedFood
+                if (currentFood != null) {
+                    item {
+                        PortionAdjusterSection(
+                            food = currentFood,
+                            selectedOptionIndex = uiState.selectedOptionIndex,
+                            quantityMultiplier = uiState.quantityMultiplier,
+                            isCustomMode = uiState.isCustomGramMode,
+                            customGramsInput = uiState.customGrams,
+                            isBangla = uiState.isBanglaLanguage,
+                            onOptionSelected = { viewModel.selectServingOption(it) },
+                            onMultiplierChange = { viewModel.setQuantityMultiplier(it) },
+                            onCustomModeToggle = { viewModel.setCustomGramMode(it) },
+                            onCustomGramsChange = { viewModel.updateCustomGrams(it) }
+                        )
                     }
                 }
-            } else {
-                items(
-                    items = uiState.filteredFoods,
-                    key = { it.id }
-                ) { food ->
+
+                // 5. Section Header for Food Directory
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp, bottom = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (uiState.isBanglaLanguage) "খাবারের তালিকা (${uiState.filteredFoods.size})"
+                            else "Foods Directory (${uiState.filteredFoods.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = if (uiState.isBanglaLanguage) "ট্যাপ করে সিলেক্ট করুন" else "Tap to select",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // 6. Filtered Food List Items
+                items(uiState.filteredFoods, key = { it.id }) { food ->
                     FoodListItemCard(
                         food = food,
                         isSelected = food.id == uiState.selectedFood?.id,
@@ -289,25 +249,19 @@ fun CalorieCalculatorScreen(
                         onSelect = { viewModel.selectFood(food) }
                     )
                 }
-            }
 
-            // Bottom space for comfortable scrolling above the ad banner
-            item {
-                Spacer(modifier = Modifier.height(32.dp))
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }
-}
 
-/**
- * Android Intent system share for WhatsApp, Facebook, Instagram Stories, TikTok, Messages, etc.
- */
-private fun shareCalorieSummary(context: Context, summaryText: String) {
-    val sendIntent = Intent().apply {
-        action = Intent.ACTION_SEND
-        putExtra(Intent.EXTRA_TEXT, summaryText)
-        type = "text/plain"
+    // Dialogs
+    if (showAboutDialog) {
+        AboutInfoDialog(
+            onDismiss = { showAboutDialog = false },
+            isBangla = uiState.isBanglaLanguage
+        )
     }
-    val shareIntent = Intent.createChooser(sendIntent, "Share Calorie Estimate via")
-    context.startActivity(shareIntent)
 }

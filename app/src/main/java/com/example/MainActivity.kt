@@ -20,9 +20,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Initialize Google Mobile Ads SDK with provided App ID
+        // Initialize Google Mobile Ads SDK with App ID
         AdConfig.initialize(this)
 
+        // Preload Interstitial Ad Unit
         interstitialAdManager = InterstitialAdManager(this)
         interstitialAdManager.loadAd()
 
@@ -30,12 +31,7 @@ class MainActivity : ComponentActivity() {
             CalorieSnapTheme {
                 CalorieCalculatorScreen(
                     viewModel = viewModel,
-                    onTriggerShareWithInterstitial = { onCompleteAction ->
-                        // Show interstitial on natural transition (Share action) then execute share
-                        interstitialAdManager.showAd(this@MainActivity) {
-                            onCompleteAction()
-                        }
-                    }
+                    interstitialAdManager = interstitialAdManager
                 )
             }
         }

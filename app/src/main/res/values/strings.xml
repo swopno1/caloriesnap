@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">CalorieSnap</string>
+    <!-- Placeholder google_app_id to prevent Firebase Analytics Missing google_app_id initialization error -->
+    <string name="google_app_id" translatable="false">1:522205398456:android:caloriesnap000000</string>
 </resources>
