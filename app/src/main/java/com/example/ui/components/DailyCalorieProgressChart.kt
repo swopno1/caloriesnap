@@ -99,6 +99,7 @@ fun DailyCalorieProgressChart(
     onLogCurrentFood: (MealType) -> Unit,
     onRemoveLoggedItem: (String) -> Unit,
     onClearDailyLog: () -> Unit,
+    onOpenSettings: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val isBn = uiState.isBanglaLanguage
@@ -187,7 +188,13 @@ fun DailyCalorieProgressChart(
 
                 // Edit Goal Button Chip
                 Surface(
-                    onClick = { showGoalDialog = true },
+                    onClick = {
+                        if (onOpenSettings != null) {
+                            onOpenSettings()
+                        } else {
+                            showGoalDialog = true
+                        }
+                    },
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
                     modifier = Modifier.testTag("edit_daily_goal_button")

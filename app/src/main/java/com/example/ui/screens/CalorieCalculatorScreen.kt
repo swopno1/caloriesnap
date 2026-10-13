@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,6 +56,7 @@ import com.example.viewmodel.CalorieCalculatorViewModel
 fun CalorieCalculatorScreen(
     viewModel: CalorieCalculatorViewModel,
     interstitialAdManager: InterstitialAdManager? = null,
+    onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -101,6 +103,18 @@ fun CalorieCalculatorScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
+                    // Settings Button
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.testTag("open_settings_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = if (uiState.isBanglaLanguage) "সেটিংস" else "Settings",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+
                     // Language Switch Button
                     TextButton(
                         onClick = { viewModel.toggleLanguage() },
@@ -183,7 +197,8 @@ fun CalorieCalculatorScreen(
                         onSetDailyGoal = { viewModel.setDailyGoal(it) },
                         onLogCurrentFood = { viewModel.logCurrentFood(it) },
                         onRemoveLoggedItem = { viewModel.removeLoggedItem(it) },
-                        onClearDailyLog = { viewModel.clearDailyLog() }
+                        onClearDailyLog = { viewModel.clearDailyLog() },
+                        onOpenSettings = onOpenSettings
                     )
                 }
 

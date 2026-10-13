@@ -3,15 +3,18 @@ package com.example.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.preferences.UserPreferencesRepository
 import com.example.data.FoodDatabase
 import com.example.data.local.CalorieSnapDatabase
 import com.example.data.repository.FoodRepository
+import com.example.data.repository.MealLogRepository
 import com.example.model.FoodCategory
 import com.example.model.FoodItem
 import com.example.model.LoggedMealItem
 import com.example.model.MealType
 import com.example.model.ServingOption
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +24,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+enum class AppScreen {
+    CALCULATOR,
+    SETTINGS
+}
+
 data class SelectedPortion(
     val selectedOptionIndex: Int = 0,
     val quantityMultiplier: Double = 1.0,
@@ -28,6 +36,7 @@ data class SelectedPortion(
 )
 
 data class CalorieUiState(
+    val currentScreen: AppScreen = AppScreen.CALCULATOR,
     val searchQuery: String = "",
     val selectedCategory: FoodCategory = FoodCategory.ALL,
     val isBanglaLanguage: Boolean = false,
@@ -40,6 +49,8 @@ data class CalorieUiState(
     val totalIndexedFoodsCount: Int = FoodDatabase.foods.size,
     val isRoomDbReady: Boolean = false,
     val dailyCalorieGoal: Int = 2000,
+    val dietaryPreset: String = "MAINTAIN",
+    val isGoalSavedFeedback: Boolean = false,
     val dailyLoggedItems: List<LoggedMealItem> = emptyList()
 ) {
     val currentCalculatedCalories: Int
@@ -131,15 +142,25 @@ data class CalorieUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class CalorieCalculatorViewModel(
     application: Application,
-    private val repository: FoodRepository? = null
+    private val repository: FoodRepository? = null,
+    private val preferencesRepository: UserPreferencesRepository? = null,
+    private val mealLogRepository: MealLogRepository? = null
 ) : AndroidViewModel(application) {
 
     // Explicit constructor required by ViewModelProvider's AndroidViewModelFactory reflection
-    constructor(application: Application) : this(application, null)
+    constructor(application: Application) : this(application, null, null, null)
 
     private val effectiveRepository: FoodRepository = repository ?: run {
         val database = CalorieSnapDatabase.getDatabase(application)
         FoodRepository(database.foodDao())
+    }
+
+    private val effectivePreferencesRepository: UserPreferencesRepository =
+        preferencesRepository ?: UserPreferencesRepository(application)
+
+    private val effectiveMealLogRepository: MealLogRepository = mealLogRepository ?: run {
+        val database = CalorieSnapDatabase.getDatabase(application)
+        MealLogRepository(database.mealLogDao())
     }
 
     private var allRoomFoods: List<FoodItem> = FoodDatabase.foods
@@ -185,6 +206,37 @@ class CalorieCalculatorViewModel(
     val uiState: StateFlow<CalorieUiState> = _uiState.asStateFlow()
 
     init {
+        // Observe saved settings from DataStore preferences
+        viewModelScope.launch {
+            effectivePreferencesRepository.dailyCalorieGoalFlow.collect { savedGoal ->
+                _uiState.update { it.copy(dailyCalorieGoal = savedGoal) }
+            }
+        }
+
+        viewModelScope.launch {
+            effectivePreferencesRepository.dietaryPresetFlow.collect { preset ->
+                _uiState.update { it.copy(dietaryPreset = preset) }
+            }
+        }
+
+        viewModelScope.launch {
+            effectivePreferencesRepository.isBanglaLanguageFlow.collect { isBn ->
+                _uiState.update { it.copy(isBanglaLanguage = isBn) }
+            }
+        }
+
+        // Observe and load meal logs from Room database
+        viewModelScope.launch {
+            if (effectiveMealLogRepository.getCount() == 0) {
+                effectiveMealLogRepository.logAllMeals(initialSampleMeals)
+            }
+            effectiveMealLogRepository.allMealLogs.collect { logs ->
+                if (logs.isNotEmpty()) {
+                    _uiState.update { it.copy(dailyLoggedItems = logs) }
+                }
+            }
+        }
+
         // Ensure default South Asian dishes are seeded into Room database
         viewModelScope.launch {
             effectiveRepository.ensureDatabaseSeeded()
@@ -243,7 +295,20 @@ class CalorieCalculatorViewModel(
     }
 
     fun toggleLanguage() {
-        _uiState.update { it.copy(isBanglaLanguage = !it.isBanglaLanguage) }
+        val next = !_uiState.value.isBanglaLanguage
+        _uiState.update { it.copy(isBanglaLanguage = next) }
+        viewModelScope.launch {
+            effectivePreferencesRepository.updateBanglaLanguage(next)
+        }
+    }
+
+    // Navigation Between Screens
+    fun navigateTo(screen: AppScreen) {
+        _uiState.update { it.copy(currentScreen = screen) }
+    }
+
+    fun navigateBack() {
+        _uiState.update { it.copy(currentScreen = AppScreen.CALCULATOR) }
     }
 
     fun selectFood(food: FoodItem) {
@@ -294,10 +359,48 @@ class CalorieCalculatorViewModel(
         _uiState.update { it.copy(customGrams = filtered, isCustomGramMode = true) }
     }
 
-    // Daily Goal & Meal Logging Functions
+    // Daily Goal & Preferences Settings Functions
     fun setDailyGoal(goal: Int) {
         val safeGoal = goal.coerceIn(500, 10000)
         _uiState.update { it.copy(dailyCalorieGoal = safeGoal) }
+        viewModelScope.launch {
+            effectivePreferencesRepository.updateDailyCalorieGoal(safeGoal)
+        }
+    }
+
+    fun setDietaryPreset(preset: String, recommendedGoal: Int) {
+        val safeGoal = recommendedGoal.coerceIn(500, 10000)
+        _uiState.update {
+            it.copy(
+                dailyCalorieGoal = safeGoal,
+                dietaryPreset = preset
+            )
+        }
+        viewModelScope.launch {
+            effectivePreferencesRepository.updateDietaryPreset(preset)
+            effectivePreferencesRepository.updateDailyCalorieGoal(safeGoal)
+        }
+    }
+
+    fun resetDailyGoalToDefault() {
+        val defaultGoal = UserPreferencesRepository.DEFAULT_DAILY_CALORIE_GOAL
+        _uiState.update {
+            it.copy(
+                dailyCalorieGoal = defaultGoal,
+                dietaryPreset = "MAINTAIN"
+            )
+        }
+        viewModelScope.launch {
+            effectivePreferencesRepository.resetToDefaultGoal()
+        }
+    }
+
+    fun triggerGoalSavedFeedback() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isGoalSavedFeedback = true) }
+            delay(2200)
+            _uiState.update { it.copy(isGoalSavedFeedback = false) }
+        }
     }
 
     fun logCurrentFood(mealType: MealType = MealType.LUNCH) {
@@ -319,16 +422,25 @@ class CalorieCalculatorViewModel(
         _uiState.update { current ->
             current.copy(dailyLoggedItems = listOf(newItem) + current.dailyLoggedItems)
         }
+        viewModelScope.launch {
+            effectiveMealLogRepository.logMeal(newItem)
+        }
     }
 
     fun removeLoggedItem(id: String) {
         _uiState.update { current ->
             current.copy(dailyLoggedItems = current.dailyLoggedItems.filterNot { it.id == id })
         }
+        viewModelScope.launch {
+            effectiveMealLogRepository.removeMeal(id)
+        }
     }
 
     fun clearDailyLog() {
         _uiState.update { it.copy(dailyLoggedItems = emptyList()) }
+        viewModelScope.launch {
+            effectiveMealLogRepository.clearAllLogs()
+        }
     }
 
     private fun filterFoods(query: String, category: FoodCategory, sourceList: List<FoodItem>): List<FoodItem> {

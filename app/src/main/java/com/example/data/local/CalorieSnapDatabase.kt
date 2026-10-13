@@ -11,18 +11,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- * Main Room Database for CalorieSnap offline food catalog.
+ * Main Room Database for CalorieSnap offline food catalog and meal tracking logs.
  * Prepopulates default common Bangladeshi, South Asian, and global food items
  * upon first creation so offline estimation works instantly out-of-the-box.
+ * Stores user meal logs to track daily calorie history over time.
  */
 @Database(
-    entities = [FoodEntity::class],
-    version = 1,
+    entities = [
+        FoodEntity::class,
+        MealLogEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
 abstract class CalorieSnapDatabase : RoomDatabase() {
 
     abstract fun foodDao(): FoodDao
+    abstract fun mealLogDao(): MealLogDao
 
     companion object {
         @Volatile
@@ -35,6 +40,7 @@ abstract class CalorieSnapDatabase : RoomDatabase() {
                     CalorieSnapDatabase::class.java,
                     "caloriesnap_food_database.db"
                 )
+                    .fallbackToDestructiveMigration()
                     .addCallback(CalorieDatabaseCallback(scope))
                     .build()
                 INSTANCE = instance

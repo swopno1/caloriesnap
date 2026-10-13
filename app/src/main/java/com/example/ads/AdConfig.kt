@@ -151,6 +151,7 @@ fun AdMobBanner(
             .height(50.dp),
         factory = { ctx ->
             AdView(ctx).apply {
+                setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
                 setAdSize(AdSize.BANNER)
                 this.adUnitId = adUnitId
                 adListener = object : com.google.android.gms.ads.AdListener() {

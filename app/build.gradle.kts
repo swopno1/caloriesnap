@@ -101,6 +101,9 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   "ksp"(libs.androidx.room.compiler)
 
+  // DataStore Preferences
+  implementation(libs.androidx.datastore.preferences)
+
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
