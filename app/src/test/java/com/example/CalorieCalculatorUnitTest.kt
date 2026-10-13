@@ -1,5 +1,7 @@
 package com.example
 
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import com.example.data.FoodDatabase
 import com.example.model.FoodCategory
 import com.example.viewmodel.CalorieCalculatorViewModel
@@ -9,14 +11,20 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class CalorieCalculatorUnitTest {
 
     private lateinit var viewModel: CalorieCalculatorViewModel
 
     @Before
     fun setUp() {
-        viewModel = CalorieCalculatorViewModel()
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        viewModel = CalorieCalculatorViewModel(app)
     }
 
     @Test

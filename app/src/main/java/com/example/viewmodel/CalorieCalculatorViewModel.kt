@@ -1,7 +1,11 @@
 package com.example.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.data.FoodDatabase
+import com.example.data.local.CalorieSnapDatabase
+import com.example.data.repository.FoodRepository
 import com.example.model.FoodCategory
 import com.example.model.FoodItem
 import com.example.model.ServingOption
@@ -9,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 data class SelectedPortion(
@@ -80,7 +85,17 @@ data class CalorieUiState(
         }
 }
 
-class CalorieCalculatorViewModel : ViewModel() {
+class CalorieCalculatorViewModel @JvmOverloads constructor(
+    application: Application,
+    private val repository: FoodRepository? = null
+) : AndroidViewModel(application) {
+
+    private val effectiveRepository: FoodRepository = repository ?: run {
+        val database = CalorieSnapDatabase.getDatabase(application)
+        FoodRepository(database.foodDao())
+    }
+
+    private var allRoomFoods: List<FoodItem> = FoodDatabase.foods
 
     private val _uiState = MutableStateFlow(
         CalorieUiState(
@@ -93,6 +108,28 @@ class CalorieCalculatorViewModel : ViewModel() {
     val uiState: StateFlow<CalorieUiState> = _uiState.asStateFlow()
 
     init {
+        // Ensure default dishes are seeded and observe from Room
+        viewModelScope.launch {
+            effectiveRepository.ensureDatabaseSeeded()
+            effectiveRepository.allFoods.collect { foodsFromDb ->
+                if (foodsFromDb.isNotEmpty()) {
+                    allRoomFoods = foodsFromDb
+                    _uiState.update { current ->
+                        val currentSelected = current.selectedFood
+                        val updatedSelected = if (currentSelected == null) {
+                            foodsFromDb.firstOrNull()
+                        } else {
+                            foodsFromDb.find { it.id == currentSelected.id } ?: currentSelected
+                        }
+                        current.copy(
+                            selectedFood = updatedSelected,
+                            filteredFoods = filterFoods(current.searchQuery, current.selectedCategory, foodsFromDb)
+                        )
+                    }
+                }
+            }
+        }
+
         // Set initial portion according to default serving
         val initialFood = FoodDatabase.foods.firstOrNull()
         if (initialFood != null) {
@@ -103,14 +140,14 @@ class CalorieCalculatorViewModel : ViewModel() {
     fun onSearchQueryChange(query: String) {
         _uiState.update { current ->
             val updated = current.copy(searchQuery = query)
-            updated.copy(filteredFoods = filterFoods(query, updated.selectedCategory))
+            updated.copy(filteredFoods = filterFoods(query, updated.selectedCategory, allRoomFoods))
         }
     }
 
     fun onCategorySelect(category: FoodCategory) {
         _uiState.update { current ->
             val updated = current.copy(selectedCategory = category)
-            updated.copy(filteredFoods = filterFoods(current.searchQuery, category))
+            updated.copy(filteredFoods = filterFoods(current.searchQuery, category, allRoomFoods))
         }
     }
 
@@ -167,9 +204,9 @@ class CalorieCalculatorViewModel : ViewModel() {
         _uiState.update { it.copy(customGrams = filtered, isCustomGramMode = true) }
     }
 
-    private fun filterFoods(query: String, category: FoodCategory): List<FoodItem> {
+    private fun filterFoods(query: String, category: FoodCategory, sourceList: List<FoodItem>): List<FoodItem> {
         val trimmed = query.trim().lowercase()
-        return FoodDatabase.foods.filter { food ->
+        return sourceList.filter { food ->
             val matchesCategory = (category == FoodCategory.ALL || food.category == category)
             val matchesQuery = trimmed.isEmpty() ||
                     food.nameEn.lowercase().contains(trimmed) ||
