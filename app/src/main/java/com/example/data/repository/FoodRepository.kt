@@ -41,6 +41,13 @@ class FoodRepository(
         }
     }
 
+    fun searchAndFilterFoods(query: String, category: FoodCategory): Flow<List<FoodItem>> {
+        val trimmed = query.trim()
+        return foodDao.searchAndFilterFoods(trimmed, category.name).map { entities ->
+            entities.map { it.toDomainModel() }
+        }
+    }
+
     suspend fun getFoodById(id: String): FoodItem? {
         return foodDao.getFoodById(id)?.toDomainModel()
     }

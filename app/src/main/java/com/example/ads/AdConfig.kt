@@ -16,13 +16,14 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
 /**
  * Centralized Google Mobile Ads (AdMob) configuration and manager for CalorieSnap.
  *
- * User provided AdMob IDs:
+ * Configured AdMob IDs:
  * - App ID: ca-app-pub-5222053984568989~8281700642
  * - Banner 1 Ad Unit ID: ca-app-pub-5222053984568989/8421301444
  * - Interstitial 1 Ad Unit ID: ca-app-pub-5222053984568989/7282470439
@@ -35,17 +36,29 @@ object AdConfig {
     const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-5222053984568989/7282470439"
 
     var isInitialized = false
+        private set
 
-    fun initialize(context: Context) {
+    fun initialize(context: Context, onInitialized: (() -> Unit)? = null) {
         if (!isInitialized) {
             try {
+                // Configure test device ID for emulator environments to avoid ad services & header errors
+                val testDeviceIds = listOf(AdRequest.DEVICE_ID_EMULATOR)
+                val configuration = RequestConfiguration.Builder()
+                    .setTestDeviceIds(testDeviceIds)
+                    .build()
+                MobileAds.setRequestConfiguration(configuration)
+
                 MobileAds.initialize(context) { initializationStatus ->
                     isInitialized = true
                     Log.d(TAG, "AdMob MobileAds initialized: $initializationStatus")
+                    onInitialized?.invoke()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error initializing MobileAds", e)
+                onInitialized?.invoke()
             }
+        } else {
+            onInitialized?.invoke()
         }
     }
 }
@@ -140,6 +153,14 @@ fun AdMobBanner(
             AdView(ctx).apply {
                 setAdSize(AdSize.BANNER)
                 this.adUnitId = adUnitId
+                adListener = object : com.google.android.gms.ads.AdListener() {
+                    override fun onAdLoaded() {
+                        Log.d(AdConfig.TAG, "Banner ad loaded successfully")
+                    }
+                    override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                        Log.w(AdConfig.TAG, "Banner ad failed to load: ${loadAdError.message}")
+                    }
+                }
                 loadAd(AdRequest.Builder().build())
             }
         }

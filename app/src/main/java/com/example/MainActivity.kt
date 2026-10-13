@@ -20,12 +20,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Create Interstitial manager (lazy loading on user action instead of aggressive launch loading)
+        interstitialAdManager = InterstitialAdManager(this)
+
         // Initialize Google Mobile Ads SDK with App ID
         AdConfig.initialize(this)
-
-        // Preload Interstitial Ad Unit
-        interstitialAdManager = InterstitialAdManager(this)
-        interstitialAdManager.loadAd()
 
         setContent {
             CalorieSnapTheme {

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.FoodDatabase
 import com.example.model.FoodCategory
+import com.example.model.MealType
 import com.example.viewmodel.CalorieCalculatorViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -20,11 +21,21 @@ import org.robolectric.annotation.Config
 class CalorieCalculatorUnitTest {
 
     private lateinit var viewModel: CalorieCalculatorViewModel
+    private lateinit var app: Application
 
     @Before
     fun setUp() {
-        val app = ApplicationProvider.getApplicationContext<Application>()
+        app = ApplicationProvider.getApplicationContext<Application>()
         viewModel = CalorieCalculatorViewModel(app)
+    }
+
+    @Test
+    fun testViewModelConstructorReflectionForFactory() {
+        // Explicitly tests that ViewModelProvider.AndroidViewModelFactory reflection works
+        val constructor = CalorieCalculatorViewModel::class.java.getConstructor(Application::class.java)
+        assertNotNull("Constructor matching (Application) must exist", constructor)
+        val instance = constructor.newInstance(app)
+        assertNotNull("Instantiated ViewModel must not be null", instance)
     }
 
     @Test
@@ -40,6 +51,8 @@ class CalorieCalculatorUnitTest {
         assertEquals(0, state.selectedOptionIndex)
         assertEquals(1.0, state.quantityMultiplier, 0.001)
         assertFalse(state.isBanglaLanguage)
+        assertEquals(2000, state.dailyCalorieGoal)
+        assertTrue("Initial logged items must not be empty", state.dailyLoggedItems.isNotEmpty())
     }
 
     @Test
@@ -62,6 +75,21 @@ class CalorieCalculatorUnitTest {
                     food.descriptionEn.contains("rice", ignoreCase = true)
             assertTrue("Food ${food.nameEn} should match query", matches)
         }
+    }
+
+    @Test
+    fun testEmptySearchYieldsEmptyList() {
+        viewModel.onSearchQueryChange("xyznonexistentdish123")
+        val state = viewModel.uiState.value
+        assertTrue("Non-existent dish should yield empty list", state.filteredFoods.isEmpty())
+    }
+
+    @Test
+    fun testClearSearchRestoresFoods() {
+        viewModel.onSearchQueryChange("biryani")
+        assertTrue(viewModel.uiState.value.filteredFoods.size < FoodDatabase.foods.size)
+        viewModel.onSearchQueryChange("")
+        assertEquals(FoodDatabase.foods.size, viewModel.uiState.value.filteredFoods.size)
     }
 
     @Test
@@ -101,10 +129,72 @@ class CalorieCalculatorUnitTest {
     }
 
     @Test
+    fun testDailyCalorieGoalSetting() {
+        viewModel.setDailyGoal(2250)
+        assertEquals(2250, viewModel.uiState.value.dailyCalorieGoal)
+
+        // Safety coerce limits
+        viewModel.setDailyGoal(200) // below 500
+        assertEquals(500, viewModel.uiState.value.dailyCalorieGoal)
+
+        viewModel.setDailyGoal(12000) // above 10000
+        assertEquals(10000, viewModel.uiState.value.dailyCalorieGoal)
+    }
+
+    @Test
+    fun testLogCurrentFoodToDailyProgress() {
+        val initialCount = viewModel.uiState.value.dailyLoggedItems.size
+        val initialCalories = viewModel.uiState.value.totalConsumedCalories
+
+        viewModel.selectFood(FoodDatabase.foods.first())
+        val currentFoodCal = viewModel.uiState.value.currentCalculatedCalories
+
+        viewModel.logCurrentFood(MealType.DINNER)
+
+        val updatedState = viewModel.uiState.value
+        assertEquals(initialCount + 1, updatedState.dailyLoggedItems.size)
+        assertEquals(initialCalories + currentFoodCal, updatedState.totalConsumedCalories)
+        assertEquals(MealType.DINNER, updatedState.dailyLoggedItems.first().mealType)
+    }
+
+    @Test
+    fun testRemoveAndClearDailyLog() {
+        val state = viewModel.uiState.value
+        assertTrue(state.dailyLoggedItems.isNotEmpty())
+
+        val firstItemId = state.dailyLoggedItems.first().id
+        viewModel.removeLoggedItem(firstItemId)
+        assertFalse(viewModel.uiState.value.dailyLoggedItems.any { it.id == firstItemId })
+
+        viewModel.clearDailyLog()
+        assertTrue(viewModel.uiState.value.dailyLoggedItems.isEmpty())
+        assertEquals(0, viewModel.uiState.value.totalConsumedCalories)
+        assertEquals(viewModel.uiState.value.dailyCalorieGoal, viewModel.uiState.value.remainingCalories)
+    }
+
+    @Test
+    fun testCalorieProgressCalculations() {
+        viewModel.clearDailyLog()
+        viewModel.setDailyGoal(2000)
+
+        assertEquals(0f, viewModel.uiState.value.calorieProgressFraction, 0.001f)
+        assertFalse(viewModel.uiState.value.isGoalExceeded)
+
+        viewModel.selectFood(FoodDatabase.foods.first())
+        viewModel.logCurrentFood(MealType.LUNCH)
+
+        val consumed = viewModel.uiState.value.totalConsumedCalories
+        val expectedFraction = consumed.toFloat() / 2000f
+        assertEquals(expectedFraction, viewModel.uiState.value.calorieProgressFraction, 0.001f)
+        assertEquals(2000 - consumed, viewModel.uiState.value.remainingCalories)
+    }
+
+    @Test
     fun testShareSummaryContent() {
         val shareText = viewModel.generateShareSummary()
         assertTrue("Share text must mention CalorieSnap", shareText.contains("CalorieSnap"))
         assertTrue("Share text must mention Estimated Calories", shareText.contains("Estimated Calories"))
+        assertTrue("Share text must include Daily Goal Progress", shareText.contains("Daily Goal Progress"))
         assertTrue("Share text must include publisher ViveScript Solutions LLC", shareText.contains("ViveScript Solutions LLC"))
     }
 }

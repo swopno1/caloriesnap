@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,13 +43,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ads.AdMobBanner
 import com.example.ads.InterstitialAdManager
-import com.example.data.FoodDatabase
 import com.example.ui.components.AboutInfoDialog
 import com.example.ui.components.CalorieHeroCard
-import com.example.ui.components.CategoryFilterChipsRow
-import com.example.ui.components.FoodListItemCard
-import com.example.ui.components.FoodSearchBar
+import com.example.ui.components.DailyCalorieProgressChart
 import com.example.ui.components.PortionAdjusterSection
+import com.example.ui.components.SearchableFoodListComponent
 import com.example.viewmodel.CalorieCalculatorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,7 +89,7 @@ fun CalorieCalculatorScreen(
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = if (uiState.isBanglaLanguage) "ক্যালোরি ক্যালকুলেটর" else "Quick Calorie Estimator",
+                                text = if (uiState.isBanglaLanguage) "ক্যালোরি ক্যালকুলেটর ও ট্র্যাকার" else "Calorie Estimator & Tracker",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
@@ -160,27 +157,9 @@ fun CalorieCalculatorScreen(
                     .fillMaxSize()
                     .widthIn(max = 680.dp),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. Search Bar
-                item {
-                    FoodSearchBar(
-                        query = uiState.searchQuery,
-                        onQueryChange = { viewModel.onSearchQueryChange(it) },
-                        isBangla = uiState.isBanglaLanguage
-                    )
-                }
-
-                // 2. Category Filter Chips
-                item {
-                    CategoryFilterChipsRow(
-                        selectedCategory = uiState.selectedCategory,
-                        onCategorySelected = { viewModel.onCategorySelect(it) },
-                        isBangla = uiState.isBanglaLanguage
-                    )
-                }
-
-                // 3. Main Calorie Hero Result Display Card
+                // 1. Main Calorie Hero Result Display Card
                 item {
                     CalorieHeroCard(
                         uiState = uiState,
@@ -197,7 +176,18 @@ fun CalorieCalculatorScreen(
                     )
                 }
 
-                // 4. Portion / Serving Adjuster Section
+                // 2. Visual Representation: Daily Calorie Consumption Progress Against Set Goal
+                item {
+                    DailyCalorieProgressChart(
+                        uiState = uiState,
+                        onSetDailyGoal = { viewModel.setDailyGoal(it) },
+                        onLogCurrentFood = { viewModel.logCurrentFood(it) },
+                        onRemoveLoggedItem = { viewModel.removeLoggedItem(it) },
+                        onClearDailyLog = { viewModel.clearDailyLog() }
+                    )
+                }
+
+                // 3. Portion / Serving Adjuster Section
                 val currentFood = uiState.selectedFood
                 if (currentFood != null) {
                     item {
@@ -216,37 +206,19 @@ fun CalorieCalculatorScreen(
                     }
                 }
 
-                // 5. Section Header for Food Directory
+                // 4. Searchable List Component (Queries Room Database)
                 item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp, bottom = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (uiState.isBanglaLanguage) "খাবারের তালিকা (${uiState.filteredFoods.size})"
-                            else "Foods Directory (${uiState.filteredFoods.size})",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = if (uiState.isBanglaLanguage) "ট্যাপ করে সিলেক্ট করুন" else "Tap to select",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                // 6. Filtered Food List Items
-                items(uiState.filteredFoods, key = { it.id }) { food ->
-                    FoodListItemCard(
-                        food = food,
-                        isSelected = food.id == uiState.selectedFood?.id,
+                    SearchableFoodListComponent(
+                        searchQuery = uiState.searchQuery,
+                        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+                        selectedCategory = uiState.selectedCategory,
+                        onCategorySelected = { viewModel.onCategorySelect(it) },
+                        foodItems = uiState.filteredFoods,
+                        selectedFood = uiState.selectedFood,
+                        onFoodSelected = { viewModel.selectFood(it) },
                         isBangla = uiState.isBanglaLanguage,
-                        onSelect = { viewModel.selectFood(food) }
+                        totalIndexedCount = uiState.totalIndexedFoodsCount,
+                        isRoomDbReady = uiState.isRoomDbReady
                     )
                 }
 

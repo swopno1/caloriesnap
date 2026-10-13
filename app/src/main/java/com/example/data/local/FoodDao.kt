@@ -33,6 +33,17 @@ interface FoodDao {
     """)
     fun searchFoods(query: String): Flow<List<FoodEntity>>
 
+    @Query("""
+        SELECT * FROM food_items 
+        WHERE (:category = 'ALL' OR category = :category)
+          AND (:query = '' OR LOWER(nameEn) LIKE '%' || LOWER(:query) || '%' 
+               OR nameBn LIKE '%' || :query || '%' 
+               OR LOWER(descriptionEn) LIKE '%' || LOWER(:query) || '%'
+               OR descriptionBn LIKE '%' || :query || '%')
+        ORDER BY nameEn ASC
+    """)
+    fun searchAndFilterFoods(query: String, category: String): Flow<List<FoodEntity>>
+
     @Query("SELECT COUNT(*) FROM food_items")
     suspend fun getFoodCount(): Int
 
