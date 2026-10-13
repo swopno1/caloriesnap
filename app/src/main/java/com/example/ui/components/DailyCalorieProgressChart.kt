@@ -100,11 +100,15 @@ fun DailyCalorieProgressChart(
     onRemoveLoggedItem: (String) -> Unit,
     onClearDailyLog: () -> Unit,
     onOpenSettings: (() -> Unit)? = null,
+    onUpdateLoggedItem: ((LoggedMealItem) -> Unit)? = null,
+    onAddExtraIntake: ((nameEn: String, nameBn: String, calories: Int, grams: Int, mealType: MealType) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val isBn = uiState.isBanglaLanguage
     var showGoalDialog by remember { mutableStateOf(false) }
-    var isHistoryExpanded by remember { mutableStateOf(false) }
+    var isHistoryExpanded by remember { mutableStateOf(true) }
+    var editingMealItem by remember { mutableStateOf<LoggedMealItem?>(null) }
+    var showExtraIntakeDialog by remember { mutableStateOf(false) }
 
     val consumed = uiState.totalConsumedCalories
     val goal = uiState.dailyCalorieGoal
@@ -171,6 +175,11 @@ fun DailyCalorieProgressChart(
                             modifier = Modifier.size(20.dp)
                         )
                     }
+                    val todayFormatted = if (isBn) {
+                        "আজ, " + java.text.SimpleDateFormat("d MMMM", java.util.Locale("bn")).format(java.util.Date())
+                    } else {
+                        "Today, " + java.text.SimpleDateFormat("EEEE, MMM d", java.util.Locale.getDefault()).format(java.util.Date())
+                    }
                     Column {
                         Text(
                             text = if (isBn) "দৈনিক ক্যালোরি লক্ষ্য" else "Daily Calorie Goal",
@@ -179,43 +188,54 @@ fun DailyCalorieProgressChart(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = if (isBn) "আজকের খাওয়ার অগ্রগতি" else "Today's Consumption Progress",
+                            text = todayFormatted,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                // Edit Goal Button Chip
-                Surface(
-                    onClick = {
-                        if (onOpenSettings != null) {
-                            onOpenSettings()
-                        } else {
-                            showGoalDialog = true
-                        }
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
-                    modifier = Modifier.testTag("edit_daily_goal_button")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    StatusPill(
+                        progress = progressFraction,
+                        isExceeded = isOver,
+                        isBn = isBn
+                    )
+
+                    // Edit Goal Button Chip
+                    Surface(
+                        onClick = {
+                            if (onOpenSettings != null) {
+                                onOpenSettings()
+                            } else {
+                                showGoalDialog = true
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                        modifier = Modifier.testTag("edit_daily_goal_button")
                     ) {
-                        Text(
-                            text = if (isBn) "লক্ষ্য: $goal kcal" else "Goal: $goal kcal",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Goal",
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = if (isBn) "$goal kcal" else "$goal kcal",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Goal",
+                                modifier = Modifier.size(13.dp),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
                     }
                 }
             }
@@ -371,35 +391,38 @@ fun DailyCalorieProgressChart(
                         .height(14.dp)
                 )
 
-                // Meal Legend Chips
-                FlowRow(
+                // Compact Meal Subtotals Row
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    MealLegendPill(
+                    CompactMealSubtotalTile(
                         emoji = MealType.BREAKFAST.iconEmoji,
-                        label = if (isBn) MealType.BREAKFAST.titleBn else MealType.BREAKFAST.titleEn,
+                        label = if (isBn) MealType.BREAKFAST.shortTitleBn else MealType.BREAKFAST.shortTitleEn,
                         calories = uiState.breakfastCalories,
-                        color = Color(MealType.BREAKFAST.colorHex)
+                        color = Color(MealType.BREAKFAST.colorHex),
+                        modifier = Modifier.weight(1f)
                     )
-                    MealLegendPill(
+                    CompactMealSubtotalTile(
                         emoji = MealType.LUNCH.iconEmoji,
-                        label = if (isBn) MealType.LUNCH.titleBn else MealType.LUNCH.titleEn,
+                        label = if (isBn) MealType.LUNCH.shortTitleBn else MealType.LUNCH.shortTitleEn,
                         calories = uiState.lunchCalories,
-                        color = Color(MealType.LUNCH.colorHex)
+                        color = Color(MealType.LUNCH.colorHex),
+                        modifier = Modifier.weight(1f)
                     )
-                    MealLegendPill(
+                    CompactMealSubtotalTile(
                         emoji = MealType.DINNER.iconEmoji,
-                        label = if (isBn) MealType.DINNER.titleBn else MealType.DINNER.titleEn,
+                        label = if (isBn) MealType.DINNER.shortTitleBn else MealType.DINNER.shortTitleEn,
                         calories = uiState.dinnerCalories,
-                        color = Color(MealType.DINNER.colorHex)
+                        color = Color(MealType.DINNER.colorHex),
+                        modifier = Modifier.weight(1f)
                     )
-                    MealLegendPill(
+                    CompactMealSubtotalTile(
                         emoji = MealType.SNACK.iconEmoji,
-                        label = if (isBn) MealType.SNACK.titleBn else MealType.SNACK.titleEn,
+                        label = if (isBn) MealType.SNACK.shortTitleBn else MealType.SNACK.shortTitleEn,
                         calories = uiState.snackCalories,
-                        color = Color(MealType.SNACK.colorHex)
+                        color = Color(MealType.SNACK.colorHex),
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -487,7 +510,7 @@ fun DailyCalorieProgressChart(
                                         .testTag("log_to_${mealType.name.lowercase()}_button")
                                 ) {
                                     Text(
-                                        text = "${mealType.iconEmoji} ${if (isBn) mealType.titleBn.take(4) else mealType.titleEn}",
+                                        text = "${mealType.iconEmoji} ${if (isBn) mealType.shortTitleBn else mealType.shortTitleEn}",
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
@@ -501,76 +524,111 @@ fun DailyCalorieProgressChart(
                 }
             }
 
-            // Expandable Logged Meals History Drawer
-            if (uiState.dailyLoggedItems.isNotEmpty()) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.fillMaxWidth()
+            // Logged Meals History Drawer with Easy Edit & Quick Extra Intake
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isHistoryExpanded = !isHistoryExpanded },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { isHistoryExpanded = !isHistoryExpanded },
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = if (isBn) "আজকের গৃহীত খাবারের তালিকা (${uiState.dailyLoggedItems.size})"
-                                    else "Today's Logged Meals (${uiState.dailyLoggedItems.size})",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (isHistoryExpanded) {
-                                    TextButton(
-                                        onClick = onClearDailyLog,
-                                        contentPadding = PaddingValues(horizontal = 6.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.RestartAlt,
-                                            contentDescription = "Clear",
-                                            modifier = Modifier.size(16.dp),
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = if (isBn) "রিসেট" else "Reset",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    }
-                                }
-                                Icon(
-                                    imageVector = if (isHistoryExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Toggle History",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Text(
+                                text = if (isBn) "আজকের খাবারের তালিকা (${uiState.dailyLoggedItems.size})"
+                                else "Today's Logged Meals (${uiState.dailyLoggedItems.size})",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (uiState.dailyLoggedItems.isNotEmpty() && isHistoryExpanded) {
+                                TextButton(
+                                    onClick = onClearDailyLog,
+                                    contentPadding = PaddingValues(horizontal = 6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.RestartAlt,
+                                        contentDescription = "Clear",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isBn) "রিসেট" else "Reset",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                            Icon(
+                                imageVector = if (isHistoryExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Toggle History",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
 
-                        AnimatedVisibility(
-                            visible = isHistoryExpanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut()
-                        ) {
+                    // Button to quickly add extra intake: Tea, snacks, chips, etc.
+                    Button(
+                        onClick = { showExtraIntakeDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("add_extra_intake_button"),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isBn) "+ অতিরিক্ত নাস্তা বা চা যোগ করুন (চা, চিপস, বিস্কুট)"
+                            else "+ Add Extra Intake (Tea, Snacks, Chips, etc.)",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = isHistoryExpanded || uiState.dailyLoggedItems.isEmpty(),
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        if (uiState.dailyLoggedItems.isEmpty()) {
+                            Text(
+                                text = if (isBn) "আজকে এখনও কোনো খাবার যোগ করা হয়নি।" else "No meals logged yet today.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        } else {
                             Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 uiState.dailyLoggedItems.forEach { item ->
                                     LoggedMealRow(
                                         item = item,
                                         isBn = isBn,
+                                        onEdit = { editingMealItem = item },
                                         onDelete = { onRemoveLoggedItem(item.id) }
                                     )
                                 }
@@ -580,6 +638,31 @@ fun DailyCalorieProgressChart(
                 }
             }
         }
+    }
+
+    // Edit Daily Meal Item Dialog
+    editingMealItem?.let { itemToEdit ->
+        EditMealItemDialog(
+            item = itemToEdit,
+            isBn = isBn,
+            onDismiss = { editingMealItem = null },
+            onSave = { updated ->
+                onUpdateLoggedItem?.invoke(updated)
+                editingMealItem = null
+            }
+        )
+    }
+
+    // Quick Extra Intake Dialog (Tea, Snacks, Chips, etc.)
+    if (showExtraIntakeDialog) {
+        QuickExtraIntakeDialog(
+            isBn = isBn,
+            onDismiss = { showExtraIntakeDialog = false },
+            onConfirm = { nameEn, nameBn, cal, grams, mealType ->
+                onAddExtraIntake?.invoke(nameEn, nameBn, cal, grams, mealType)
+                showExtraIntakeDialog = false
+            }
+        )
     }
 
     // Daily Calorie Goal Editing Dialog
@@ -761,15 +844,18 @@ private fun MacroProgressCard(
 private fun LoggedMealRow(
     item: LoggedMealItem,
     isBn: Boolean,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(10.dp),
+        onClick = onEdit,
+        shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
             MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
-        )
+        ),
+        modifier = Modifier.testTag("logged_meal_row_${item.id}")
     ) {
         Row(
             modifier = Modifier
@@ -785,7 +871,7 @@ private fun LoggedMealRow(
             ) {
                 Text(
                     text = item.mealType.iconEmoji,
-                    fontSize = 16.sp
+                    fontSize = 18.sp
                 )
                 Column {
                     Text(
@@ -803,16 +889,34 @@ private fun LoggedMealRow(
                 }
             }
 
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.DeleteOutline,
-                    contentDescription = "Remove Meal",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(16.dp)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .testTag("edit_meal_button_${item.id}")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Meal",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .testTag("delete_meal_button_${item.id}")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "Remove Meal",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
@@ -897,4 +1001,98 @@ private fun GoalSetterDialog(
             }
         }
     )
+}
+
+@Composable
+private fun StatusPill(
+    progress: Float,
+    isExceeded: Boolean,
+    isBn: Boolean
+) {
+    val (label, bg, contentColor) = when {
+        isExceeded -> Triple(
+            if (isBn) "লক্ষ্য অতিক্রম" else "Over Goal",
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer
+        )
+        progress >= 0.85f -> Triple(
+            if (isBn) "লক্ষ্যের কাছাকাছি" else "Near Target",
+            Color(0xFFFEF3C7),
+            Color(0xFF92400E)
+        )
+        progress >= 0.3f -> Triple(
+            if (isBn) "অন ট্র‍্যাক" else "On Track",
+            Color(0xFFD1FAE5),
+            Color(0xFF065F46)
+        )
+        else -> Triple(
+            if (isBn) "শুরুর পর্যায়" else "Started",
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    }
+
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = bg
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(contentColor)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = contentColor,
+                fontSize = 11.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompactMealSubtotalTile(
+    emoji: String,
+    label: String,
+    calories: Int,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(text = emoji, fontSize = 14.sp)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "$calories kcal",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (calories > 0) color else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                fontSize = 10.sp
+            )
+        }
+    }
 }

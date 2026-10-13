@@ -5,13 +5,15 @@ import java.util.UUID
 enum class MealType(
     val titleEn: String,
     val titleBn: String,
+    val shortTitleEn: String,
+    val shortTitleBn: String,
     val iconEmoji: String,
     val colorHex: Long
 ) {
-    BREAKFAST("Breakfast", "সকালের নাস্তা", "🌅", 0xFFFB8C00),
-    LUNCH("Lunch", "দুপুরের খাবার", "☀️", 0xFF1E88E5),
-    DINNER("Dinner", "রাতের খাবার", "🌙", 0xFF6D28D9),
-    SNACK("Snack", "নাস্তা", "🍎", 0xFF0D9488)
+    BREAKFAST("Breakfast", "সকালের নাস্তা", "B'fast", "সকাল", "🌅", 0xFFFB8C00),
+    LUNCH("Lunch", "দুপুরের খাবার", "Lunch", "দুপুর", "☀️", 0xFF1E88E5),
+    DINNER("Dinner", "রাতের খাবার", "Dinner", "রাত", "🌙", 0xFF6D28D9),
+    SNACK("Snacks", "নাস্তা", "Snack", "নাস্তা", "☕", 0xFF0D9488)
 }
 
 data class LoggedMealItem(

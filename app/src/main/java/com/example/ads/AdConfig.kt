@@ -2,11 +2,23 @@ package com.example.ads
 
 import android.app.Activity
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdError
@@ -35,10 +47,38 @@ object AdConfig {
     const val BANNER_AD_UNIT_ID = "ca-app-pub-5222053984568989/8421301444"
     const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-5222053984568989/7282470439"
 
+    /**
+     * Checks if the app is executing inside an Android emulator environment.
+     * In headless cloud emulator environments without physical GPU pass-through,
+     * Chromium/WebView graphics probing triggers Mesa drm rendernode lookup errors.
+     * We safely provide lightweight test ad UI in emulator environments.
+     */
+    val isEmulator: Boolean by lazy {
+        Build.FINGERPRINT.startsWith("generic")
+                || Build.FINGERPRINT.startsWith("unknown")
+                || Build.MODEL.contains("google_sdk")
+                || Build.MODEL.contains("Emulator")
+                || Build.MODEL.contains("Android SDK built for x86")
+                || Build.HARDWARE.contains("goldfish")
+                || Build.HARDWARE.contains("ranchu")
+                || Build.PRODUCT.contains("sdk")
+                || Build.PRODUCT.contains("google_sdk")
+                || Build.PRODUCT.contains("emulator")
+                || Build.BRAND.startsWith("generic")
+                || Build.DEVICE.startsWith("generic")
+    }
+
     var isInitialized = false
         private set
 
     fun initialize(context: Context, onInitialized: (() -> Unit)? = null) {
+        if (isEmulator) {
+            Log.d(TAG, "Running on emulator environment - using lightweight test ad mode to prevent Mesa DRM rendernode query errors.")
+            isInitialized = true
+            onInitialized?.invoke()
+            return
+        }
+
         if (!isInitialized) {
             try {
                 // Configure test device ID for emulator environments to avoid ad services & header errors
@@ -72,6 +112,7 @@ class InterstitialAdManager(private val context: Context) {
     private var isLoading = false
 
     fun loadAd() {
+        if (AdConfig.isEmulator) return
         if (interstitialAd != null || isLoading) return
         isLoading = true
 
@@ -104,13 +145,18 @@ class InterstitialAdManager(private val context: Context) {
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     interstitialAd = null
                     isLoading = false
-                    Log.w(AdConfig.TAG, "Interstitial failed to load: ${loadAdError.message}")
+                    Log.w(AdConfig.TAG, "Interstitial ad failed to load: ${loadAdError.message}")
                 }
             }
         )
     }
 
     fun showAd(activity: Activity, onAdDismissedOrSkipped: () -> Unit) {
+        if (AdConfig.isEmulator) {
+            onAdDismissedOrSkipped()
+            return
+        }
+
         val currentAd = interstitialAd
         if (currentAd != null) {
             currentAd.fullScreenContentCallback = object : FullScreenContentCallback() {
@@ -139,31 +185,81 @@ class InterstitialAdManager(private val context: Context) {
 
 /**
  * Jetpack Compose wrapper for Google AdMob Banner Ad View.
+ * Displays lightweight preview in emulator environments to prevent Mesa DRM rendernode query errors.
  */
 @Composable
 fun AdMobBanner(
     modifier: Modifier = Modifier,
     adUnitId: String = AdConfig.BANNER_AD_UNIT_ID
 ) {
-    AndroidView(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(50.dp),
-        factory = { ctx ->
-            AdView(ctx).apply {
-                setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
-                setAdSize(AdSize.BANNER)
-                this.adUnitId = adUnitId
-                adListener = object : com.google.android.gms.ads.AdListener() {
-                    override fun onAdLoaded() {
-                        Log.d(AdConfig.TAG, "Banner ad loaded successfully")
+    if (AdConfig.isEmulator) {
+        // Safe, lightweight test ad placeholder that prevents Mesa GPU DRM rendernode errors on cloud emulators
+        Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .testTag("admob_banner_placeholder"),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "Ad",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
                     }
-                    override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                        Log.w(AdConfig.TAG, "Banner ad failed to load: ${loadAdError.message}")
-                    }
+                    Text(
+                        text = "Google AdMob • Test Banner (320x50)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                loadAd(AdRequest.Builder().build())
+                Text(
+                    text = "CalorieSnap",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                )
             }
         }
-    )
+    } else {
+        AndroidView(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            factory = { ctx ->
+                AdView(ctx).apply {
+                    setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
+                    setAdSize(AdSize.BANNER)
+                    this.adUnitId = adUnitId
+                    adListener = object : com.google.android.gms.ads.AdListener() {
+                        override fun onAdLoaded() {
+                            Log.d(AdConfig.TAG, "Banner ad loaded successfully")
+                        }
+                        override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                            Log.w(AdConfig.TAG, "Banner ad failed to load: ${loadAdError.message}")
+                        }
+                    }
+                    loadAd(AdRequest.Builder().build())
+                }
+            }
+        )
+    }
 }

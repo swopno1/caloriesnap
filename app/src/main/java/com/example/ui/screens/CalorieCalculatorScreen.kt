@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -48,6 +49,7 @@ import com.example.ui.components.AboutInfoDialog
 import com.example.ui.components.CalorieHeroCard
 import com.example.ui.components.DailyCalorieProgressChart
 import com.example.ui.components.PortionAdjusterSection
+import com.example.ui.components.QuickExtraIntakeDialog
 import com.example.ui.components.SearchableFoodListComponent
 import com.example.viewmodel.CalorieCalculatorViewModel
 
@@ -62,6 +64,15 @@ fun CalorieCalculatorScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showAboutDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    fun showFeedback(msg: String) {
+        coroutineScope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(message = msg, duration = androidx.compose.material3.SnackbarDuration.Short)
+        }
+    }
 
     fun shareResult(shareText: String) {
         val sendIntent = Intent().apply {
@@ -78,6 +89,7 @@ fun CalorieCalculatorScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { androidx.compose.material3.SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -173,7 +185,46 @@ fun CalorieCalculatorScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. Main Calorie Hero Result Display Card
+                // 1. Refined Daily Calorie Goal & Today's Intake Hub
+                item {
+                    DailyCalorieProgressChart(
+                        uiState = uiState,
+                        onSetDailyGoal = {
+                            viewModel.setDailyGoal(it)
+                            showFeedback(if (uiState.isBanglaLanguage) "লক্ষ্যমাত্রা সংরক্ষিত: $it kcal" else "Goal saved: $it kcal")
+                        },
+                        onLogCurrentFood = { mealType ->
+                            val foodName = if (uiState.isBanglaLanguage) uiState.selectedFood?.nameBn else uiState.selectedFood?.nameEn
+                            viewModel.logCurrentFood(mealType)
+                            val mealTitle = if (uiState.isBanglaLanguage) mealType.titleBn else mealType.titleEn
+                            showFeedback(
+                                if (uiState.isBanglaLanguage) "‘$foodName’ $mealTitle-এ যোগ করা হয়েছে!"
+                                else "Logged '$foodName' to $mealTitle!"
+                            )
+                        },
+                        onRemoveLoggedItem = { id ->
+                            viewModel.removeLoggedItem(id)
+                            showFeedback(if (uiState.isBanglaLanguage) "খাবারটি তালিকা থেকে সরানো হয়েছে" else "Item removed from log")
+                        },
+                        onClearDailyLog = {
+                            viewModel.clearDailyLog()
+                            showFeedback(if (uiState.isBanglaLanguage) "আজকের তালিকা রিসেট করা হয়েছে" else "Daily log reset")
+                        },
+                        onOpenSettings = onOpenSettings,
+                        onUpdateLoggedItem = { item ->
+                            viewModel.updateLoggedItem(item)
+                            val name = if (uiState.isBanglaLanguage) item.foodNameBn else item.foodNameEn
+                            showFeedback(if (uiState.isBanglaLanguage) "‘$name’ আপডেট করা হয়েছে!" else "Updated '$name'!")
+                        },
+                        onAddExtraIntake = { nameEn, nameBn, cal, grams, mealType ->
+                            viewModel.logExtraIntake(nameEn, nameBn, cal, grams, mealType)
+                            val name = if (uiState.isBanglaLanguage) nameBn else nameEn
+                            showFeedback(if (uiState.isBanglaLanguage) "‘$name’ ($cal kcal) যোগ করা হয়েছে!" else "Added '$name' ($cal kcal)!")
+                        }
+                    )
+                }
+
+                // 2. Active Food Calorie Calculator & Macro Result Display Card
                 item {
                     CalorieHeroCard(
                         uiState = uiState,
@@ -187,18 +238,6 @@ fun CalorieCalculatorScreen(
                                 shareResult(textToShare)
                             }
                         }
-                    )
-                }
-
-                // 2. Visual Representation: Daily Calorie Consumption Progress Against Set Goal
-                item {
-                    DailyCalorieProgressChart(
-                        uiState = uiState,
-                        onSetDailyGoal = { viewModel.setDailyGoal(it) },
-                        onLogCurrentFood = { viewModel.logCurrentFood(it) },
-                        onRemoveLoggedItem = { viewModel.removeLoggedItem(it) },
-                        onClearDailyLog = { viewModel.clearDailyLog() },
-                        onOpenSettings = onOpenSettings
                     )
                 }
 

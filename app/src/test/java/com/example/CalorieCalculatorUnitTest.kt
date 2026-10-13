@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.FoodDatabase
 import com.example.model.FoodCategory
+import com.example.model.LoggedMealItem
 import com.example.model.MealType
 import com.example.viewmodel.CalorieCalculatorViewModel
 import kotlinx.coroutines.flow.first
@@ -324,5 +325,69 @@ class CalorieCalculatorUnitTest {
         dao.clearAllMealLogs()
         val emptyLogs = dao.getAllMealLogs().first()
         assertTrue(emptyLogs.isEmpty())
+    }
+
+    @Test
+    fun testTodayTotalCaloriesCalculationFromDailyLogEntries() {
+        viewModel.clearDailyLog()
+        assertEquals(0, viewModel.uiState.value.totalConsumedCalories)
+
+        // Select a food and log it
+        viewModel.selectFood(FoodDatabase.foods[0])
+        viewModel.logCurrentFood(MealType.BREAKFAST)
+        viewModel.logCurrentFood(MealType.LUNCH)
+
+        val state = viewModel.uiState.value
+        assertTrue(state.totalConsumedCalories > 0)
+        assertEquals(
+            state.breakfastCalories + state.lunchCalories + state.dinnerCalories + state.snackCalories,
+            state.totalConsumedCalories
+        )
+        assertEquals(state.dailyCalorieGoal - state.totalConsumedCalories, state.remainingCalories)
+    }
+
+    @Test
+    fun testEditDailyMealItemUpdatesCalorieCalculations() {
+        viewModel.clearDailyLog()
+        val originalItem = LoggedMealItem(
+            id = "test-editable-item",
+            foodNameEn = "Plain Rice",
+            foodNameBn = "সাদা ভাত",
+            calories = 200,
+            grams = 150,
+            mealType = MealType.LUNCH
+        )
+        viewModel.logCurrentFood(MealType.LUNCH)
+        val initialCalories = viewModel.uiState.value.totalConsumedCalories
+
+        // Now edit an item with new actual calories
+        val logged = viewModel.uiState.value.dailyLoggedItems.first()
+        val edited = logged.copy(calories = 380, grams = 250)
+        viewModel.updateLoggedItem(edited)
+
+        val updatedState = viewModel.uiState.value
+        val updatedItem = updatedState.dailyLoggedItems.first { it.id == logged.id }
+        assertEquals(380, updatedItem.calories)
+        assertEquals(250, updatedItem.grams)
+        // Verify total calorie calculation updated to reflect actual calories
+        assertEquals(initialCalories - logged.calories + 380, updatedState.totalConsumedCalories)
+        assertEquals(updatedState.dailyCalorieGoal - updatedState.totalConsumedCalories, updatedState.remainingCalories)
+    }
+
+    @Test
+    fun testLogExtraIntakeTeaAndSnacks() {
+        viewModel.clearDailyLog()
+        val initialSnackCal = viewModel.uiState.value.snackCalories
+
+        // Log extra tea
+        viewModel.logExtraIntake("Dudh Cha / Sweet Milk Tea", "দুধ চা", 100, 120, MealType.SNACK)
+        // Log extra chips
+        viewModel.logExtraIntake("Potato Chips", "আলুর চিপস", 150, 30, MealType.SNACK)
+
+        val state = viewModel.uiState.value
+        assertEquals(initialSnackCal + 250, state.snackCalories)
+        assertTrue(state.dailyLoggedItems.any { it.foodNameEn.contains("Dudh Cha") && it.calories == 100 })
+        assertTrue(state.dailyLoggedItems.any { it.foodNameEn.contains("Potato Chips") && it.calories == 150 })
+        assertEquals(state.dailyCalorieGoal - state.totalConsumedCalories, state.remainingCalories)
     }
 }

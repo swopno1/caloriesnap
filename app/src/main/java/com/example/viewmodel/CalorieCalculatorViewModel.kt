@@ -436,6 +436,45 @@ class CalorieCalculatorViewModel(
         }
     }
 
+    fun updateLoggedItem(updatedItem: LoggedMealItem) {
+        _uiState.update { current ->
+            current.copy(
+                dailyLoggedItems = current.dailyLoggedItems.map {
+                    if (it.id == updatedItem.id) updatedItem else it
+                }
+            )
+        }
+        viewModelScope.launch {
+            effectiveMealLogRepository.updateMeal(updatedItem)
+        }
+    }
+
+    fun logExtraIntake(
+        nameEn: String,
+        nameBn: String,
+        calories: Int,
+        grams: Int = 100,
+        mealType: MealType = MealType.SNACK
+    ) {
+        if (calories <= 0) return
+        val newItem = LoggedMealItem(
+            foodNameEn = nameEn,
+            foodNameBn = nameBn,
+            calories = calories,
+            grams = grams,
+            carbsGrams = ((calories * 0.55) / 4.0),
+            proteinGrams = ((calories * 0.15) / 4.0),
+            fatGrams = ((calories * 0.30) / 9.0),
+            mealType = mealType
+        )
+        _uiState.update { current ->
+            current.copy(dailyLoggedItems = listOf(newItem) + current.dailyLoggedItems)
+        }
+        viewModelScope.launch {
+            effectiveMealLogRepository.logMeal(newItem)
+        }
+    }
+
     fun clearDailyLog() {
         _uiState.update { it.copy(dailyLoggedItems = emptyList()) }
         viewModelScope.launch {

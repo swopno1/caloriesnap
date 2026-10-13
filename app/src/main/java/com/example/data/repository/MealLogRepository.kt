@@ -47,8 +47,28 @@ class MealLogRepository(
         }
     }
 
+    fun getTodayLogsFlow(): Flow<List<LoggedMealItem>> {
+        return getLogsForDay(System.currentTimeMillis())
+    }
+
+    fun getTodayTotalCaloriesFlow(): Flow<Int> {
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val startOfDay = calendar.timeInMillis
+        val endOfDay = startOfDay + (24 * 60 * 60 * 1000) - 1
+        return mealLogDao.getTotalCaloriesBetween(startOfDay, endOfDay).map { it ?: 0 }
+    }
+
     suspend fun logMeal(item: LoggedMealItem) {
         mealLogDao.insertMealLog(MealLogEntity.fromDomainModel(item))
+    }
+
+    suspend fun updateMeal(item: LoggedMealItem) {
+        mealLogDao.updateMealLog(MealLogEntity.fromDomainModel(item))
     }
 
     suspend fun logAllMeals(items: List<LoggedMealItem>) {
