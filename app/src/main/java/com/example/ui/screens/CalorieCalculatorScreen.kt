@@ -185,60 +185,7 @@ fun CalorieCalculatorScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. Searchable List Component (Queries Room Database) — the front door:
-                // find food first, then estimate, adjust, and track below.
-                item {
-                    SearchableFoodListComponent(
-                        searchQuery = uiState.searchQuery,
-                        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
-                        selectedCategory = uiState.selectedCategory,
-                        onCategorySelected = { viewModel.onCategorySelect(it) },
-                        foodItems = uiState.filteredFoods,
-                        selectedFood = uiState.selectedFood,
-                        onFoodSelected = { viewModel.selectFood(it) },
-                        isBangla = uiState.isBanglaLanguage,
-                        totalIndexedCount = uiState.totalIndexedFoodsCount,
-                        isRoomDbReady = uiState.isRoomDbReady
-                    )
-                }
-
-                // 2. Active Food Calorie Calculator & Macro Result Display Card
-                item {
-                    CalorieHeroCard(
-                        uiState = uiState,
-                        onShareClick = {
-                            val textToShare = viewModel.generateShareSummary()
-                            if (context is Activity && interstitialAdManager != null) {
-                                interstitialAdManager.showAd(context) {
-                                    shareResult(textToShare)
-                                }
-                            } else {
-                                shareResult(textToShare)
-                            }
-                        }
-                    )
-                }
-
-                // 3. Portion / Serving Adjuster Section
-                val currentFood = uiState.selectedFood
-                if (currentFood != null) {
-                    item {
-                        PortionAdjusterSection(
-                            food = currentFood,
-                            selectedOptionIndex = uiState.selectedOptionIndex,
-                            quantityMultiplier = uiState.quantityMultiplier,
-                            isCustomMode = uiState.isCustomGramMode,
-                            customGramsInput = uiState.customGrams,
-                            isBangla = uiState.isBanglaLanguage,
-                            onOptionSelected = { viewModel.selectServingOption(it) },
-                            onMultiplierChange = { viewModel.setQuantityMultiplier(it) },
-                            onCustomModeToggle = { viewModel.setCustomGramMode(it) },
-                            onCustomGramsChange = { viewModel.updateCustomGrams(it) }
-                        )
-                    }
-                }
-
-                // 4. Refined Daily Calorie Goal & Today's Intake Hub
+                // 1. Refined Daily Calorie Goal & Today's Intake Hub
                 item {
                     DailyCalorieProgressChart(
                         uiState = uiState,
@@ -275,6 +222,58 @@ fun CalorieCalculatorScreen(
                             showFeedback(if (uiState.isBanglaLanguage) "‘$name’ ($cal kcal) যোগ করা হয়েছে!" else "Added '$name' ($cal kcal)!")
                         }
                     )
+                }
+
+                // 2. Searchable List Component (Queries Room Database)
+                item {
+                    SearchableFoodListComponent(
+                        searchQuery = uiState.searchQuery,
+                        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+                        selectedCategory = uiState.selectedCategory,
+                        onCategorySelected = { viewModel.onCategorySelect(it) },
+                        foodItems = uiState.filteredFoods,
+                        selectedFood = uiState.selectedFood,
+                        onFoodSelected = { viewModel.selectFood(it) },
+                        isBangla = uiState.isBanglaLanguage,
+                        totalIndexedCount = uiState.totalIndexedFoodsCount,
+                        isRoomDbReady = uiState.isRoomDbReady
+                    )
+                }
+
+                // 3. Active Food Calorie Calculator & Macro Result Display Card
+                item {
+                    CalorieHeroCard(
+                        uiState = uiState,
+                        onShareClick = {
+                            val textToShare = viewModel.generateShareSummary()
+                            if (context is Activity && interstitialAdManager != null) {
+                                interstitialAdManager.showAd(context) {
+                                    shareResult(textToShare)
+                                }
+                            } else {
+                                shareResult(textToShare)
+                            }
+                        }
+                    )
+                }
+
+                // 4. Portion / Serving Adjuster Section
+                val currentFood = uiState.selectedFood
+                if (currentFood != null) {
+                    item {
+                        PortionAdjusterSection(
+                            food = currentFood,
+                            selectedOptionIndex = uiState.selectedOptionIndex,
+                            quantityMultiplier = uiState.quantityMultiplier,
+                            isCustomMode = uiState.isCustomGramMode,
+                            customGramsInput = uiState.customGrams,
+                            isBangla = uiState.isBanglaLanguage,
+                            onOptionSelected = { viewModel.selectServingOption(it) },
+                            onMultiplierChange = { viewModel.setQuantityMultiplier(it) },
+                            onCustomModeToggle = { viewModel.setCustomGramMode(it) },
+                            onCustomGramsChange = { viewModel.updateCustomGrams(it) }
+                        )
+                    }
                 }
 
                 item {

@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Store Graphics:** Upload artifacts flattened to no-alpha; mislabeled JPEG foreground renamed to `.jpg`.
 
 ### Fixed
-- **Home-screen order:** food search now leads, followed by estimate, portion, and tracking (was: tracking first, search buried at the bottom).
+- **Home-screen order:** Daily Calorie Goal dashboard leads, followed by food search, estimate, and portion sections.
 - **Launch crash:** replaced `FlowRow` suggestion pills with a horizontal `LazyRow` — the `FlowRow` overload call crashed at runtime (`NoSuchMethodError`) once the search section composed.
 - **Truncation fixes:** 2-line hero food title; goal chip moved to a full-width row; meal-log buttons stack emoji over label so nothing clips.
 - **Jargon removal:** user-visible "Room DB" / "DataStore" strings replaced with plain language (EN/BN).
