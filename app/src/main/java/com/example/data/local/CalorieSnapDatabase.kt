@@ -40,7 +40,6 @@ abstract class CalorieSnapDatabase : RoomDatabase() {
                     CalorieSnapDatabase::class.java,
                     "caloriesnap_food_database.db"
                 )
-                    .fallbackToDestructiveMigration()
                     .addCallback(CalorieDatabaseCallback(scope))
                     .build()
                 INSTANCE = instance

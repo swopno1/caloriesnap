@@ -8,8 +8,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -60,7 +58,6 @@ import com.example.model.FoodItem
  * A comprehensive, searchable list component in Jetpack Compose that interfaces
  * with the local Room database to filter, search, and select South Asian & Bangladeshi food items.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SearchableFoodListComponent(
     searchQuery: String,
@@ -112,12 +109,11 @@ fun SearchableFoodListComponent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
                 )
-                FlowRow(
+                LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    quickSuggestions.forEach { (en, bn) ->
+                    items(quickSuggestions) { (en, bn) ->
                         val label = if (isBangla) bn else en
                         AssistChip(
                             onClick = { onSearchQueryChange(en) },
@@ -172,14 +168,14 @@ fun SearchableFoodListComponent(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Storage,
-                            contentDescription = "Room Database",
+                            contentDescription = if (isBangla) "অফলাইন খাবারের সংখ্যা" else "Offline food count",
                             modifier = Modifier.size(13.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (isBangla) "অফলাইন ডাটাবেস (${foodItems.size}/${totalIndexedCount})"
-                            else "Room DB Offline (${foodItems.size}/${totalIndexedCount})",
+                            text = if (isBangla) "${foodItems.size}/${totalIndexedCount}টি খাবার • অফলাইন"
+                            else "${foodItems.size}/${totalIndexedCount} foods • Offline",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -200,7 +196,7 @@ fun SearchableFoodListComponent(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Clear,
-                        contentDescription = "Reset filters",
+                        contentDescription = if (isBangla) "ফিল্টার রিসেট করুন" else "Reset filters",
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))

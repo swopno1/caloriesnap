@@ -151,13 +151,14 @@ fun DailyCalorieProgressChart(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header Row: Title & Goal Setting Chip
+            // Header Row: Title & Status Pill
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
+                    modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -170,7 +171,7 @@ fun DailyCalorieProgressChart(
                     ) {
                         Icon(
                             imageVector = Icons.Default.TrackChanges,
-                            contentDescription = "Daily Goal",
+                            contentDescription = if (isBn) "দৈনিক লক্ষ্য" else "Daily Goal",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
@@ -180,63 +181,66 @@ fun DailyCalorieProgressChart(
                     } else {
                         "Today, " + java.text.SimpleDateFormat("EEEE, MMM d", java.util.Locale.getDefault()).format(java.util.Date())
                     }
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = if (isBn) "দৈনিক ক্যালোরি লক্ষ্য" else "Daily Calorie Goal",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = todayFormatted,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    StatusPill(
-                        progress = progressFraction,
-                        isExceeded = isOver,
-                        isBn = isBn
-                    )
+                StatusPill(
+                    progress = progressFraction,
+                    isExceeded = isOver,
+                    isBn = isBn
+                )
+            }
 
-                    // Edit Goal Button Chip
-                    Surface(
-                        onClick = {
-                            if (onOpenSettings != null) {
-                                onOpenSettings()
-                            } else {
-                                showGoalDialog = true
-                            }
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
-                        modifier = Modifier.testTag("edit_daily_goal_button")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = if (isBn) "$goal kcal" else "$goal kcal",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Goal",
-                                modifier = Modifier.size(13.dp),
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
+            // Edit Goal Button Chip — full-width row so the goal value never truncates
+            Surface(
+                onClick = {
+                    if (onOpenSettings != null) {
+                        onOpenSettings()
+                    } else {
+                        showGoalDialog = true
                     }
+                },
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("edit_daily_goal_button")
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = if (isBn) "দৈনিক লক্ষ্য: $goal kcal" else "Daily goal: $goal kcal",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        maxLines = 1
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = if (isBn) "লক্ষ্য সম্পাদনা" else "Edit Goal",
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 }
             }
 
@@ -504,19 +508,28 @@ fun DailyCalorieProgressChart(
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(mealType.colorHex)
                                     ),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                                     modifier = Modifier
                                         .weight(1f)
                                         .testTag("log_to_${mealType.name.lowercase()}_button")
                                 ) {
-                                    Text(
-                                        text = "${mealType.iconEmoji} ${if (isBn) mealType.shortTitleBn else mealType.shortTitleEn}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Text(
+                                            text = mealType.iconEmoji,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Text(
+                                            text = if (isBn) mealType.shortTitleBn else mealType.shortTitleEn,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -561,7 +574,7 @@ fun DailyCalorieProgressChart(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.RestartAlt,
-                                        contentDescription = "Clear",
+                                        contentDescription = if (isBn) "পরিষ্কার করুন" else "Clear",
                                         modifier = Modifier.size(16.dp),
                                         tint = MaterialTheme.colorScheme.error
                                     )
@@ -575,7 +588,7 @@ fun DailyCalorieProgressChart(
                             }
                             Icon(
                                 imageVector = if (isHistoryExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = "Toggle History",
+                                contentDescription = if (isBn) "ইতিহাস দেখান/লুকান" else "Toggle History",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

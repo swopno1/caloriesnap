@@ -44,8 +44,29 @@ object AdConfig {
     const val TAG = "CalorieSnapAds"
 
     const val ADMOB_APP_ID = "ca-app-pub-5222053984568989~8281700642"
-    const val BANNER_AD_UNIT_ID = "ca-app-pub-5222053984568989/8421301444"
-    const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-5222053984568989/7282470439"
+
+    /**
+     * Resolves the active banner ad unit ID (demo in debug, live in release).
+     * Live IDs must never ship in debug binaries to avoid invalid-activity
+     * enforcement on the production units.
+     */
+    fun getBannerAdUnitId(): String = com.example.BuildConfig.ADMOB_BANNER_AD_UNIT_ID
+
+    /**
+     * Resolves the active interstitial ad unit ID (demo in debug, live in release).
+     */
+    fun getInterstitialAdUnitId(): String = com.example.BuildConfig.ADMOB_INTERSTITIAL_AD_UNIT_ID
+
+    @Volatile
+    private var adsConsentGranted = false
+
+    /** Called from MainActivity once UMP consent resolves. */
+    fun setAdsConsent(granted: Boolean) {
+        adsConsentGranted = granted
+    }
+
+    /** True only when UMP consent allows ad requests on a real device. */
+    fun canShowAdsFlow(): Boolean = adsConsentGranted && !isEmulator
 
     /**
      * Checks if the app is executing inside an Android emulator environment.
@@ -113,13 +134,14 @@ class InterstitialAdManager(private val context: Context) {
 
     fun loadAd() {
         if (AdConfig.isEmulator) return
+        if (!AdConfig.canShowAdsFlow()) return
         if (interstitialAd != null || isLoading) return
         isLoading = true
 
         val adRequest = AdRequest.Builder().build()
         InterstitialAd.load(
             context,
-            AdConfig.INTERSTITIAL_AD_UNIT_ID,
+            AdConfig.getInterstitialAdUnitId(),
             adRequest,
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
@@ -190,7 +212,7 @@ class InterstitialAdManager(private val context: Context) {
 @Composable
 fun AdMobBanner(
     modifier: Modifier = Modifier,
-    adUnitId: String = AdConfig.BANNER_AD_UNIT_ID
+    adUnitId: String = AdConfig.getBannerAdUnitId()
 ) {
     if (AdConfig.isEmulator) {
         // Safe, lightweight test ad placeholder that prevents Mesa GPU DRM rendernode errors on cloud emulators
@@ -240,6 +262,8 @@ fun AdMobBanner(
             }
         }
     } else {
+        // Without UMP consent clearance, no ad request may be issued.
+        if (!AdConfig.canShowAdsFlow()) return
         AndroidView(
             modifier = modifier
                 .fillMaxWidth()

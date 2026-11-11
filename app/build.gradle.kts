@@ -48,11 +48,18 @@ android {
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
       signingConfig = signingConfigs.getByName("release")
+      // Live Google AdMob ad units (release only).
+      buildConfigField("String", "ADMOB_BANNER_AD_UNIT_ID", "\"ca-app-pub-5222053984568989/8421301444\"")
+      buildConfigField("String", "ADMOB_INTERSTITIAL_AD_UNIT_ID", "\"ca-app-pub-5222053984568989/7282470439\"")
     }
     debug {
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
       signingConfig = signingConfigs.getByName("debugConfig")
+      // Official Google demo ad units: testing can never taint live ad traffic
+      // or trigger invalid-activity enforcement on the production units.
+      buildConfigField("String", "ADMOB_BANNER_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/6300978111\"")
+      buildConfigField("String", "ADMOB_INTERSTITIAL_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
     }
   }
   compileOptions {
@@ -80,6 +87,12 @@ secrets {
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
 
 dependencies {
+  constraints {
+    // play-services-basement transitively pulls androidx.fragment:fragment:1.1.0,
+    // which Play Console flags as an outdated SDK. Pin a current stable release
+    // (fragment is backward compatible, so basement is unaffected).
+    implementation("androidx.fragment:fragment:1.9.1")
+  }
   implementation(platform(libs.androidx.compose.bom))
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.compose.material.icons.core)
@@ -90,6 +103,7 @@ dependencies {
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
   implementation(libs.play.services.ads)
+  implementation(libs.play.services.ump)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)

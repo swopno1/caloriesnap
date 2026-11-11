@@ -45,7 +45,7 @@ fun AboutInfoDialog(
         icon = {
             Icon(
                 imageVector = Icons.Default.Info,
-                contentDescription = "About CalorieSnap",
+                contentDescription = if (isBangla) "CalorieSnap সম্পর্কে" else "About CalorieSnap",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(28.dp)
             )
@@ -74,7 +74,8 @@ fun AboutInfoDialog(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
                 Text(
-                    text = "Developed by: ViveScript Solutions LLC",
+                    text = if (isBangla) "ডেভেলপার: ViveScript Solutions LLC"
+                    else "Developed by: ViveScript Solutions LLC",
                     fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
@@ -87,20 +88,23 @@ fun AboutInfoDialog(
                 )
 
                 Text(
-                    text = "Source code: MIT License",
+                    text = if (isBangla) "সোর্স কোড: MIT লাইসেন্স"
+                    else "Source code: MIT License",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Text(
-                    text = "The app name, logo, icons, screenshots, trademarks, and associated branding are proprietary property of ViveScript Solutions LLC and are not licensed under the MIT License.",
+                    text = if (isBangla) "অ্যাপের নাম, লোগো, আইকন, স্ক্রিনশট, ট্রেডমার্ক এবং সংশ্লিষ্ট ব্র্যান্ডিং ViveScript Solutions LLC-এর স্বত্বাধীন সম্পত্তি এবং MIT লাইসেন্সের আওতাভুক্ত নয়।"
+                    else "The app name, logo, icons, screenshots, trademarks, and associated branding are proprietary property of ViveScript Solutions LLC and are not licensed under the MIT License.",
                     style = MaterialTheme.typography.bodySmall,
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
 
                 Text(
-                    text = "⚠️ Medical Disclaimer: Calorie values are approximate estimates intended for everyday reference only. It does not provide medical or clinical diet advice.",
+                    text = if (isBangla) "⚠️ চিকিৎসা দাবিত্যাগ: ক্যালোরির মান শুধুমাত্র দৈনন্দিন রেফারেন্সের জন্য আনুমানিক হিসাব। এটি কোনো চিকিৎসা বা ক্লিনিকাল ডায়েট পরামর্শ প্রদান করে না।"
+                    else "⚠️ Medical Disclaimer: Calorie values are approximate estimates intended for everyday reference only. It does not provide medical or clinical diet advice.",
                     style = MaterialTheme.typography.bodySmall,
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f)

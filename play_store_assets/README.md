@@ -8,7 +8,7 @@ This directory contains official Google Play publication assets generated for **
 /play_store_assets/
 ├── app-icon/
 │   ├── app-icon-512x512.png         # 512x512 32-bit PNG Google Play Icon
-│   ├── app-icon-foreground.png     # Adaptive foreground layer
+│   ├── app-icon-foreground.jpg     # Adaptive foreground layer source (JPEG)
 │   └── app-icon-background.png     # Adaptive solid background layer (#10B981)
 │
 ├── feature-graphic/

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -75,6 +76,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +85,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ads.ConsentManager
 import com.example.viewmodel.CalorieCalculatorViewModel
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -101,6 +104,9 @@ fun UserSettingsScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val isBn = uiState.isBanglaLanguage
+    val privacyContext = LocalContext.current
+    val privacyActivity = privacyContext as? Activity
+    val showPrivacyOptions = privacyActivity != null && ConsentManager.isPrivacyOptionsRequired(privacyContext)
     val keyboardController = LocalSoftwareKeyboardController.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -118,7 +124,7 @@ fun UserSettingsScreen(
         keyboardController?.hide()
         scope.launch {
             val msg = if (isBn) "দৈনিক ক্যালোরি লক্ষ্য সফলভাবে সংরক্ষিত হয়েছে ($safe kcal)!"
-            else "Daily calorie goal saved to DataStore preferences ($safe kcal)!"
+            else "Daily calorie goal saved ($safe kcal)!"
             snackbarHostState.showSnackbar(msg)
         }
     }
@@ -224,8 +230,8 @@ fun UserSettingsScreen(
                                     tint = Color(0xFF10B981)
                                 )
                                 Text(
-                                    text = if (isBn) "ডাটা স্টোর প্রেফারেন্সে সংরক্ষিত হয়েছে!"
-                                    else "Preferences saved permanently to DataStore!",
+                                    text = if (isBn) "সফলভাবে সংরক্ষিত হয়েছে!"
+                                    else "Saved successfully!",
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFF065F46),
                                     style = MaterialTheme.typography.bodyMedium
@@ -289,7 +295,7 @@ fun UserSettingsScreen(
                                     color = MaterialTheme.colorScheme.secondaryContainer
                                 ) {
                                     Text(
-                                        text = "DataStore Sync ✓",
+                                        text = if (isBn) "সংরক্ষিত ✓" else "Saved ✓",
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -453,7 +459,7 @@ fun UserSettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = if (isBn) "লক্ষ্য সংরক্ষণ করুন (DataStore)" else "Save Goal to Preferences",
+                                    text = if (isBn) "লক্ষ্য সংরক্ষণ করুন" else "Save Goal",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp
                                 )
@@ -663,6 +669,53 @@ fun UserSettingsScreen(
                                     color = MaterialTheme.colorScheme.error,
                                     fontWeight = FontWeight.SemiBold
                                 )
+                            }
+                        }
+                    }
+                }
+
+                if (showPrivacyOptions) {
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("privacy_options_card"),
+                            shape = RoundedCornerShape(22.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = if (isBn) "বিজ্ঞাপন গোপনীয়তা" else "Ad Privacy",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (isBn) "বিজ্ঞাপনের জন্য আপনার গোপনীয়তা পছন্দ পর্যালোচনা বা পরিবর্তন করুন:"
+                                    else "Review or change your privacy choices for ads:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                OutlinedButton(
+                                    onClick = { privacyActivity?.let { ConsentManager.showPrivacyOptions(it) } },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("ad_privacy_options_button"),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = if (isBn) "বিজ্ঞাপন গোপনীয়তা সেটিংস" else "Ad Privacy Options",
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
                         }
                     }

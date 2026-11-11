@@ -16,7 +16,13 @@ import java.io.IOException
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_settings_preferences")
 
-class UserPreferencesRepository(private val context: Context) {
+class UserPreferencesRepository(
+    private val context: Context,
+    store: DataStore<Preferences>? = null
+) {
+    // Default null preserves production behavior (app-scoped delegate);
+    // tests inject an isolated TestScope-backed DataStore.
+    private val dataStore: DataStore<Preferences> = store ?: context.dataStore
 
     companion object {
         val KEY_DAILY_CALORIE_GOAL = intPreferencesKey("daily_calorie_goal")
@@ -28,7 +34,7 @@ class UserPreferencesRepository(private val context: Context) {
         const val MAX_CALORIE_GOAL = 10000
     }
 
-    val dailyCalorieGoalFlow: Flow<Int> = context.dataStore.data
+    val dailyCalorieGoalFlow: Flow<Int> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -40,7 +46,7 @@ class UserPreferencesRepository(private val context: Context) {
             preferences[KEY_DAILY_CALORIE_GOAL] ?: DEFAULT_DAILY_CALORIE_GOAL
         }
 
-    val dietaryPresetFlow: Flow<String> = context.dataStore.data
+    val dietaryPresetFlow: Flow<String> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -52,7 +58,7 @@ class UserPreferencesRepository(private val context: Context) {
             preferences[KEY_DIETARY_PRESET] ?: "MAINTAIN"
         }
 
-    val activityLevelFlow: Flow<String> = context.dataStore.data
+    val activityLevelFlow: Flow<String> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -64,7 +70,7 @@ class UserPreferencesRepository(private val context: Context) {
             preferences[KEY_ACTIVITY_LEVEL] ?: "MODERATE"
         }
 
-    val isBanglaLanguageFlow: Flow<Boolean> = context.dataStore.data
+    val isBanglaLanguageFlow: Flow<Boolean> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -78,31 +84,31 @@ class UserPreferencesRepository(private val context: Context) {
 
     suspend fun updateDailyCalorieGoal(goal: Int) {
         val safeGoal = goal.coerceIn(MIN_CALORIE_GOAL, MAX_CALORIE_GOAL)
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[KEY_DAILY_CALORIE_GOAL] = safeGoal
         }
     }
 
     suspend fun updateDietaryPreset(preset: String) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[KEY_DIETARY_PRESET] = preset
         }
     }
 
     suspend fun updateActivityLevel(level: String) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[KEY_ACTIVITY_LEVEL] = level
         }
     }
 
     suspend fun updateBanglaLanguage(isBangla: Boolean) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[KEY_BANGLA_LANGUAGE] = isBangla
         }
     }
 
     suspend fun resetToDefaultGoal() {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[KEY_DAILY_CALORIE_GOAL] = DEFAULT_DAILY_CALORIE_GOAL
             preferences[KEY_DIETARY_PRESET] = "MAINTAIN"
         }

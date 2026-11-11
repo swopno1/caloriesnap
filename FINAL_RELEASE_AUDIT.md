@@ -1,5 +1,7 @@
 # Final Pre-Release Audit & Verification Report — CalorieSnap
 
+> **SUPERSEDED (2026-11-10):** This v1.0-era audit is preserved for history. It is stale: it describes versionCode 1 (code is now 2.0/2), claims 10 unit tests (24 now exist), an 81-char short description it calls 79 chars, and a `/production_build/*.aab` that was never committed. The current audit is `ANDROID_AUDIT_REPORT.md` and the current verdict is `PRODUCTION_READINESS.md`.
+
 **Publisher:** ViveScript Solutions LLC  
 **Application:** CalorieSnap  
 **Website:** https://www.vivescriptsolutions.com/  

@@ -47,7 +47,8 @@ Built with modern Android engineering standards by **ViveScript Solutions LLC**.
 - **UI Toolkit:** Jetpack Compose (Material 3)
 - **Design System:** Custom Emerald & Mint fresh nutritional theme with dark theme support
 - **State Management:** AndroidX ViewModel & Kotlin Coroutines StateFlow
-- **Monetization:** Google Mobile Ads (AdMob) SDK 23.6.0
+- **Monetization:** Google Mobile Ads (AdMob) SDK 23.6.0 + UMP consent SDK 4.0.0
+- **Google Play:** [CalorieSnap: Calorie Tracker](https://play.google.com/store/apps/details?id=com.vivescriptsolutions.caloriesnap)
 - **Build System:** Gradle Kotlin DSL (`.gradle.kts`) with Version Catalog (`libs.versions.toml`)
 - **Compatibility:** Min SDK 24 (Android 7.0) | Target SDK 36 (Android 15+)
 
@@ -76,8 +77,9 @@ gradle :app:assembleDebug
 
 ### Build Production Release AAB
 ```bash
-gradle :app:buildReleasePreBundle
-# Packaged into /production_build/caloriesnap-release.aab
+./gradlew :app:bundleRelease
+# Packaged into app/build/outputs/bundle/release/app-release.aab
+# (requires the operator-owned release keystore; see signing config)
 ```
 
 ### Run Unit Tests

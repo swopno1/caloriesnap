@@ -1,7 +1,7 @@
 # Terms of Service for CalorieSnap
 
 **Effective Date:** October 9, 2026  
-**Last Updated:** October 9, 2026  
+**Last Updated:** November 10, 2026  
 **Publisher:** ViveScript Solutions LLC  
 **Website:** https://www.vivescriptsolutions.com/  
 
@@ -13,7 +13,7 @@ By downloading, installing, or using **CalorieSnap** ("the Application"), you ag
 ---
 
 ### 2. Description of Service
-CalorieSnap is a standalone, offline mobile utility provided by **ViveScript Solutions LLC** to help users estimate the calorie content of everyday foods, including common Bangladeshi, South Asian, and international dishes, and share textual summaries via standard device sharing protocols.
+CalorieSnap is a standalone mobile utility provided by **ViveScript Solutions LLC** to help users estimate the calorie content of everyday foods, including common Bangladeshi, South Asian, and international dishes, and share textual summaries via standard device sharing protocols. Core tracking features work fully offline on your device; the free app is supported by Google AdMob banner and interstitial advertising (internet required for ads only), served subject to your consent choices where applicable.
 
 ---
 

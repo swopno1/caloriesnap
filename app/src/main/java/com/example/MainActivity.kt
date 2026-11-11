@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.example.ads.AdConfig
+import com.example.ads.ConsentManager
 import com.example.ads.InterstitialAdManager
 import com.example.ui.screens.CalorieCalculatorScreen
 import com.example.ui.screens.UserSettingsScreen
@@ -27,8 +28,23 @@ class MainActivity : ComponentActivity() {
         // Create Interstitial manager (lazy loading on user action instead of aggressive launch loading)
         interstitialAdManager = InterstitialAdManager(this)
 
-        // Initialize Google Mobile Ads SDK with App ID
-        AdConfig.initialize(this)
+        // Gather UMP consent first; Mobile Ads only initializes with clearance.
+        // The tracker stays fully usable even if ads never initialize.
+        try {
+            ConsentManager.gatherConsent(this) { canRequestAds ->
+                AdConfig.setAdsConsent(canRequestAds)
+                if (!canRequestAds) return@gatherConsent
+                try {
+                    AdConfig.initialize(this@MainActivity)
+                } catch (_: Throwable) {
+                }
+            }
+        } catch (_: Throwable) {
+            try {
+                AdConfig.initialize(this)
+            } catch (_: Throwable) {
+            }
+        }
 
         setContent {
             CalorieSnapTheme {

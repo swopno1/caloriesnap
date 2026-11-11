@@ -529,6 +529,7 @@ class CalorieCalculatorViewModel(
             appendLine("━━━━━━━━━━━━━━━━━━━━━")
             appendLine("⚠️ Note: Calorie values are approximate estimates. Recipe, cooking oil, and portion sizes vary.")
             appendLine("✨ Estimated instantly with CalorieSnap (ViveScript Solutions LLC)")
+            appendLine("📲 Get CalorieSnap: https://play.google.com/store/apps/details?id=com.vivescriptsolutions.caloriesnap")
         }
     }
 }

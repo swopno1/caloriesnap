@@ -1,7 +1,7 @@
 # Privacy Policy for CalorieSnap
 
 **Effective Date:** October 9, 2026  
-**Last Updated:** October 9, 2026  
+**Last Updated:** November 10, 2026  
 **Publisher:** ViveScript Solutions LLC  
 **Website:** https://www.vivescriptsolutions.com/  
 **Contact:** privacy@vivescriptsolutions.com  
@@ -24,7 +24,9 @@ At ViveScript Solutions LLC, user privacy is our foundational principle. Calorie
 
 ### 3. Local Storage & Offline Operation
 - **Offline Food Database:** The food items, calorie values, and serving portion models are bundled locally inside the application binary.
-- **No Cloud Synchronization:** Your searches, selected portion sizes, and calorie calculations occur entirely in temporary volatile device memory (RAM) and are not sent to any proprietary cloud server or database.
+- **On-Device Meal Logs & Preferences:** Meals you log, your daily calorie goal, and your language choice are stored only on your device (local Room database and DataStore preferences). They never leave your device.
+- **No Cloud Synchronization:** Your searches, selected portion sizes, and calorie calculations are not sent to any proprietary cloud server or database. The only network use is ad serving (see Section 5) and the Android share sheet you explicitly invoke.
+- **Data Deletion:** You can delete today's meal log at any time from Settings ("Clear Today's Consumed Log"). Uninstalling the app permanently removes all locally stored data.
 
 ---
 
@@ -39,6 +41,7 @@ CalorieSnap provides a one-tap **Share** button. When you tap Share:
 ### 5. Third-Party Services & Advertising (Google AdMob)
 CalorieSnap integrates the official **Google Mobile Ads (AdMob) SDK** (`com.google.android.gms:play-services-ads`) to support free utility features:
 - **Advertising Data:** Google AdMob and Google Play Services may automatically process non-personal device identifiers (such as the Google Advertising ID), IP address, coarse network telemetry, and app interaction data for the purposes of serving advertisements, frequency capping, and preventing fraudulent ad traffic.
+- **Consent Management (UMP):** Before any ad loads, the app presents Google's consent message where required (EEA/UK/Switzerland, US regulated states). You can review or change your choices at any time from the app's Settings screen ("Ad Privacy Options").
 - **Privacy Controls:** Users can manage and reset their Advertising ID or opt out of personalized ads at any time through their Android device system settings (*Settings > Google > Ads*).
 - **Google Privacy Policy:** For more information on how Google uses data from apps that use its services, visit [Google's Privacy & Terms](https://policies.google.com/technologies/ads).
 - **Analytics & Crash Reports:** No standalone third-party behavioral analytics or commercial tracking trackers are used.

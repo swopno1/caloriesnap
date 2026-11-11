@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -86,7 +87,7 @@ fun FoodSearchBar(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Search icon",
+                contentDescription = if (isBangla) "খুঁজুন" else "Search icon",
                 tint = MaterialTheme.colorScheme.primary
             )
         },
@@ -101,7 +102,7 @@ fun FoodSearchBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear search",
+                        contentDescription = if (isBangla) "খোঁজ মুছুন" else "Clear search",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -225,7 +226,7 @@ fun CalorieHeroCard(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
@@ -251,7 +252,7 @@ fun CalorieHeroCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "Share calorie estimate",
+                            contentDescription = if (isBn) "ক্যালোরি হিসাব শেয়ার করুন" else "Share calorie estimate",
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -350,7 +351,7 @@ fun CalorieHeroCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Info,
-                        contentDescription = "Estimate disclaimer",
+                        contentDescription = if (isBn) "আনুমানিক হিসাবের দাবিত্যাগ" else "Estimate disclaimer",
                         modifier = Modifier.size(13.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
@@ -432,13 +433,13 @@ fun PortionAdjusterSection(
                     onClick = { onCustomModeToggle(!isCustomMode) },
                     modifier = Modifier
                         .testTag("custom_grams_toggle_button")
-                        .height(34.dp),
-                    shape = RoundedCornerShape(17.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        .heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Custom grams",
+                        contentDescription = if (isBangla) "কাস্টম গ্রাম" else "Custom grams",
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -533,7 +534,7 @@ fun PortionAdjusterSection(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Remove,
-                                contentDescription = "Decrease portion",
+                                contentDescription = if (isBangla) "পরিমাণ কমান" else "Decrease portion",
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -571,7 +572,7 @@ fun PortionAdjusterSection(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "Increase portion",
+                                contentDescription = if (isBangla) "পরিমাণ বাড়ান" else "Increase portion",
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -598,13 +599,13 @@ fun PortionAdjusterSection(
                             modifier = Modifier
                                 .weight(1f)
                                 .testTag("custom_grams_input_field"),
-                            placeholder = { Text("e.g. 150") },
+                            placeholder = { Text(if (isBangla) "যেমন ১৫০" else "e.g. 150") },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             shape = RoundedCornerShape(14.dp),
                             trailingIcon = {
                                 Text(
-                                    text = "grams",
+                                    text = if (isBangla) "গ্রাম" else "grams",
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.padding(end = 12.dp),
                                     color = MaterialTheme.colorScheme.primary

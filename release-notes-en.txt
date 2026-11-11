@@ -1,0 +1,9 @@
+What's new in CalorieSnap 2.0:
+
+• Daily tracking & goals: log foods to meals, watch your progress chart, set a personal calorie goal
+• Manual intake logging: edit, remove, or clear logged entries anytime
+• Privacy controls: new Ad Privacy Options in Settings; ads now respect your consent choices
+• Full Bengali coverage across dialogs, hints, and accessibility labels
+• Faster, leaner build with updated SDKs and fixed store listing
+
+Your data stays on your device — no account needed.

@@ -1,6 +1,7 @@
 package com.example
 
 import android.app.Application
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.FoodDatabase
 import com.example.model.FoodCategory
@@ -9,6 +10,7 @@ import com.example.model.MealType
 import com.example.viewmodel.CalorieCalculatorViewModel
 import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
+import kotlin.time.Duration.Companion.seconds
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -16,6 +18,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -29,6 +32,9 @@ class CalorieCalculatorUnitTest {
     fun setUp() {
         app = ApplicationProvider.getApplicationContext<Application>()
         viewModel = CalorieCalculatorViewModel(app)
+        // Drain ViewModel-scope work posted to the shadow Main looper so
+        // queued collectors can't deadlock later DataStore I/O in this class.
+        shadowOf(Looper.getMainLooper()).idle()
     }
 
     @Test
@@ -198,6 +204,7 @@ class CalorieCalculatorUnitTest {
         assertTrue("Share text must mention Estimated Calories", shareText.contains("Estimated Calories"))
         assertTrue("Share text must include Daily Goal Progress", shareText.contains("Daily Goal Progress"))
         assertTrue("Share text must include publisher ViveScript Solutions LLC", shareText.contains("ViveScript Solutions LLC"))
+        assertTrue("Share text must include Play Store install link", shareText.contains("play.google.com/store/apps/details?id=com.vivescriptsolutions.caloriesnap"))
     }
 
     @Test
@@ -230,8 +237,17 @@ class CalorieCalculatorUnitTest {
     }
 
     @Test
-    fun testDataStoreUserPreferencesRepositoryDirectly() = kotlinx.coroutines.runBlocking {
-        val repo = com.example.data.preferences.UserPreferencesRepository(app)
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun testDataStoreUserPreferencesRepositoryDirectly() = kotlinx.coroutines.test.runTest(timeout = 60.seconds) {
+        // Isolated DataStore on runTest's backgroundScope: sharing the
+        // app-scoped delegate across tests deadlocks under Robolectric
+        // (pre-existing). Must use runTest's scope, not a standalone
+        // TestScope() whose scheduler never advances.
+        val testStore = androidx.datastore.preferences.core.PreferenceDataStoreFactory.create(
+            scope = backgroundScope,
+            produceFile = { java.io.File.createTempFile("test_prefs", ".preferences_pb") }
+        )
+        val repo = com.example.data.preferences.UserPreferencesRepository(app, testStore)
         repo.updateDailyCalorieGoal(1850)
         val goal = repo.dailyCalorieGoalFlow.first()
         assertEquals(1850, goal)

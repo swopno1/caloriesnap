@@ -146,7 +146,7 @@ fun CalorieCalculatorScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Info,
-                            contentDescription = "About CalorieSnap",
+                            contentDescription = if (uiState.isBanglaLanguage) "CalorieSnap সম্পর্কে" else "About CalorieSnap",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -185,42 +185,20 @@ fun CalorieCalculatorScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. Refined Daily Calorie Goal & Today's Intake Hub
+                // 1. Searchable List Component (Queries Room Database) — the front door:
+                // find food first, then estimate, adjust, and track below.
                 item {
-                    DailyCalorieProgressChart(
-                        uiState = uiState,
-                        onSetDailyGoal = {
-                            viewModel.setDailyGoal(it)
-                            showFeedback(if (uiState.isBanglaLanguage) "লক্ষ্যমাত্রা সংরক্ষিত: $it kcal" else "Goal saved: $it kcal")
-                        },
-                        onLogCurrentFood = { mealType ->
-                            val foodName = if (uiState.isBanglaLanguage) uiState.selectedFood?.nameBn else uiState.selectedFood?.nameEn
-                            viewModel.logCurrentFood(mealType)
-                            val mealTitle = if (uiState.isBanglaLanguage) mealType.titleBn else mealType.titleEn
-                            showFeedback(
-                                if (uiState.isBanglaLanguage) "‘$foodName’ $mealTitle-এ যোগ করা হয়েছে!"
-                                else "Logged '$foodName' to $mealTitle!"
-                            )
-                        },
-                        onRemoveLoggedItem = { id ->
-                            viewModel.removeLoggedItem(id)
-                            showFeedback(if (uiState.isBanglaLanguage) "খাবারটি তালিকা থেকে সরানো হয়েছে" else "Item removed from log")
-                        },
-                        onClearDailyLog = {
-                            viewModel.clearDailyLog()
-                            showFeedback(if (uiState.isBanglaLanguage) "আজকের তালিকা রিসেট করা হয়েছে" else "Daily log reset")
-                        },
-                        onOpenSettings = onOpenSettings,
-                        onUpdateLoggedItem = { item ->
-                            viewModel.updateLoggedItem(item)
-                            val name = if (uiState.isBanglaLanguage) item.foodNameBn else item.foodNameEn
-                            showFeedback(if (uiState.isBanglaLanguage) "‘$name’ আপডেট করা হয়েছে!" else "Updated '$name'!")
-                        },
-                        onAddExtraIntake = { nameEn, nameBn, cal, grams, mealType ->
-                            viewModel.logExtraIntake(nameEn, nameBn, cal, grams, mealType)
-                            val name = if (uiState.isBanglaLanguage) nameBn else nameEn
-                            showFeedback(if (uiState.isBanglaLanguage) "‘$name’ ($cal kcal) যোগ করা হয়েছে!" else "Added '$name' ($cal kcal)!")
-                        }
+                    SearchableFoodListComponent(
+                        searchQuery = uiState.searchQuery,
+                        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+                        selectedCategory = uiState.selectedCategory,
+                        onCategorySelected = { viewModel.onCategorySelect(it) },
+                        foodItems = uiState.filteredFoods,
+                        selectedFood = uiState.selectedFood,
+                        onFoodSelected = { viewModel.selectFood(it) },
+                        isBangla = uiState.isBanglaLanguage,
+                        totalIndexedCount = uiState.totalIndexedFoodsCount,
+                        isRoomDbReady = uiState.isRoomDbReady
                     )
                 }
 
@@ -260,19 +238,42 @@ fun CalorieCalculatorScreen(
                     }
                 }
 
-                // 4. Searchable List Component (Queries Room Database)
+                // 4. Refined Daily Calorie Goal & Today's Intake Hub
                 item {
-                    SearchableFoodListComponent(
-                        searchQuery = uiState.searchQuery,
-                        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
-                        selectedCategory = uiState.selectedCategory,
-                        onCategorySelected = { viewModel.onCategorySelect(it) },
-                        foodItems = uiState.filteredFoods,
-                        selectedFood = uiState.selectedFood,
-                        onFoodSelected = { viewModel.selectFood(it) },
-                        isBangla = uiState.isBanglaLanguage,
-                        totalIndexedCount = uiState.totalIndexedFoodsCount,
-                        isRoomDbReady = uiState.isRoomDbReady
+                    DailyCalorieProgressChart(
+                        uiState = uiState,
+                        onSetDailyGoal = {
+                            viewModel.setDailyGoal(it)
+                            showFeedback(if (uiState.isBanglaLanguage) "লক্ষ্যমাত্রা সংরক্ষিত: $it kcal" else "Goal saved: $it kcal")
+                        },
+                        onLogCurrentFood = { mealType ->
+                            val foodName = if (uiState.isBanglaLanguage) uiState.selectedFood?.nameBn else uiState.selectedFood?.nameEn
+                            viewModel.logCurrentFood(mealType)
+                            val mealTitle = if (uiState.isBanglaLanguage) mealType.titleBn else mealType.titleEn
+                            showFeedback(
+                                if (uiState.isBanglaLanguage) "‘$foodName’ $mealTitle-এ যোগ করা হয়েছে!"
+                                else "Logged '$foodName' to $mealTitle!"
+                            )
+                        },
+                        onRemoveLoggedItem = { id ->
+                            viewModel.removeLoggedItem(id)
+                            showFeedback(if (uiState.isBanglaLanguage) "খাবারটি তালিকা থেকে সরানো হয়েছে" else "Item removed from log")
+                        },
+                        onClearDailyLog = {
+                            viewModel.clearDailyLog()
+                            showFeedback(if (uiState.isBanglaLanguage) "আজকের তালিকা রিসেট করা হয়েছে" else "Daily log reset")
+                        },
+                        onOpenSettings = onOpenSettings,
+                        onUpdateLoggedItem = { item ->
+                            viewModel.updateLoggedItem(item)
+                            val name = if (uiState.isBanglaLanguage) item.foodNameBn else item.foodNameEn
+                            showFeedback(if (uiState.isBanglaLanguage) "‘$name’ আপডেট করা হয়েছে!" else "Updated '$name'!")
+                        },
+                        onAddExtraIntake = { nameEn, nameBn, cal, grams, mealType ->
+                            viewModel.logExtraIntake(nameEn, nameBn, cal, grams, mealType)
+                            val name = if (uiState.isBanglaLanguage) nameBn else nameEn
+                            showFeedback(if (uiState.isBanglaLanguage) "‘$name’ ($cal kcal) যোগ করা হয়েছে!" else "Added '$name' ($cal kcal)!")
+                        }
                     )
                 }
 

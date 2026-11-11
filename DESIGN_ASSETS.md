@@ -29,7 +29,7 @@ The temporary store assets directory `/play_store_assets` contains:
 /play_store_assets/
 ├── app-icon/
 │   ├── app-icon-512x512.png        (512x512 32-bit PNG, Google Play High-Res Icon)
-│   ├── app-icon-foreground.png    (Adaptive foreground layer)
+│   ├── app-icon-foreground.jpg    (Adaptive foreground layer source — JPEG data, renamed from the mislabeled .png on 2026-11-10)
 │   └── app-icon-background.png    (Adaptive background layer #10B981)
 ├── feature-graphic/
 │   └── feature-graphic-1024x500.png (1024x500 Google Play Feature Graphic)
@@ -47,7 +47,7 @@ The temporary store assets directory `/play_store_assets` contains:
 ---
 
 ## 3. Play Store Specifications
-- **App Icon:** 512 x 512 px, 32-bit PNG, max 1024 KB.
+- **App Icon:** 512 x 512 px, 32-bit PNG, max 1024 KB. Upload artifact flattened to 24-bit (no alpha) on 2026-11-10; screenshots and feature graphic likewise flattened.
 - **Feature Graphic:** 1024 x 500 px, JPG or 24-bit PNG (no alpha), max 15MB.
 - **Phone Screenshots:** Minimum 2 screenshots, 16:9 or 18:9 aspect ratio, 1080 x 2400 px or 1080 x 1920 px.
 - **Tablet Screenshots:** 7-inch & 10-inch screenshots showing responsive layout.
