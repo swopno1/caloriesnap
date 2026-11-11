@@ -16,8 +16,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -91,7 +91,7 @@ import kotlin.math.sin
  * 3. Daily macronutrient meters (Carbs, Protein, Fat)
  * 4. Interactive meal logger for current food item & goal customization dialog
  */
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DailyCalorieProgressChart(
     uiState: CalorieUiState,
@@ -935,7 +935,7 @@ private fun LoggedMealRow(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GoalSetterDialog(
     currentGoal: Int,
@@ -964,12 +964,12 @@ private fun GoalSetterDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // Presets FlowRow
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                // Presets
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    presets.forEach { preset ->
+                    items(presets) { preset ->
                         FilterChip(
                             selected = goalText == preset.toString(),
                             onClick = { goalText = preset.toString() },

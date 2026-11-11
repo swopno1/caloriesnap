@@ -5,8 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -83,7 +83,7 @@ val PopularExtraIntakePresets = listOf(
  * Dialog to easily edit an existing daily meal item's name, portion, calories,
  * and meal category so it updates actual calorie calculations immediately.
  */
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditMealItemDialog(
     item: LoggedMealItem,
@@ -213,12 +213,32 @@ fun EditMealItemDialog(
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        MealType.values().forEach { mealType ->
+                        MealType.values().take(2).forEach { mealType ->
                             FilterChip(
+                                modifier = Modifier.weight(1f),
+                                selected = selectedMealType == mealType,
+                                onClick = { selectedMealType = mealType },
+                                label = {
+                                    Text("${mealType.iconEmoji} ${if (isBn) mealType.titleBn else mealType.titleEn}")
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        MealType.values().drop(2).forEach { mealType ->
+                            FilterChip(
+                                modifier = Modifier.weight(1f),
                                 selected = selectedMealType == mealType,
                                 onClick = { selectedMealType = mealType },
                                 label = {
@@ -268,7 +288,7 @@ fun EditMealItemDialog(
  * Dialog to quickly log extra daily food intakes such as tea, coffee, snacks, chips, biscuits, etc.
  * Features 1-tap quick presets and custom entries.
  */
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickExtraIntakeDialog(
     isBn: Boolean,
@@ -338,11 +358,11 @@ fun QuickExtraIntakeDialog(
                     fontWeight = FontWeight.Bold
                 )
 
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    PopularExtraIntakePresets.forEach { preset ->
+                    items(PopularExtraIntakePresets) { preset ->
                         val isSelected = selectedPreset?.nameEn == preset.nameEn
                         FilterChip(
                             selected = isSelected,
@@ -440,12 +460,32 @@ fun QuickExtraIntakeDialog(
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        MealType.values().forEach { mealType ->
+                        MealType.values().take(2).forEach { mealType ->
                             FilterChip(
+                                modifier = Modifier.weight(1f),
+                                selected = selectedMealType == mealType,
+                                onClick = { selectedMealType = mealType },
+                                label = {
+                                    Text("${mealType.iconEmoji} ${if (isBn) mealType.titleBn else mealType.titleEn}")
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        MealType.values().drop(2).forEach { mealType ->
+                            FilterChip(
+                                modifier = Modifier.weight(1f),
                                 selected = selectedMealType == mealType,
                                 onClick = { selectedMealType = mealType },
                                 label = {
