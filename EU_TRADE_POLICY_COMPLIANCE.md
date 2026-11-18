@@ -28,7 +28,7 @@ Under EU law (Directive 2005/29/EC), any entity acting for purposes relating to 
 | :--- | :--- |
 | **Trader Status** | **Yes, I am a trader** |
 | **Legal Entity / Trader Name** | `ViveScript Solutions LLC` |
-| **Email Address** | `privacy@vivescriptsolutions.com` (verified by OTP) |
+| **Email Address** | `support@vivescriptsolutions.com` (verified by OTP) |
 | **Phone Number** | Verified company phone number (with international dial code) |
 | **Physical Address** | `1209 Orange Street, Wilmington, DE 19801, USA` |
 | **Commercial Register Number / DUNS** | Your state registration number or D-U-N-S number |
